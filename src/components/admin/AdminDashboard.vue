@@ -542,4 +542,49 @@ function handleResetDemoData() {
   padding: 2px 7px;
   border-radius: var(--radius-full);
 }
+
+@media (max-width: 768px) {
+  .admin-dashboard {
+    margin: 0 8px 30px 8px;
+  }
+  .admin-header {
+    padding: 16px;
+  }
+  .admin-title {
+    font-size: 1.4rem;
+  }
+  .header-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .admin-top-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .admin-top-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .metric-card {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .metric-value {
+    font-size: 1.2rem;
+  }
+  .admin-nav-tabs {
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+  .admin-tab-btn {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+}
 </style>

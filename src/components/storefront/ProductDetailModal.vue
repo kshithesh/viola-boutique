@@ -471,11 +471,23 @@ function handleDirectWhatsAppBuy() {
 }
 
 @media (max-width: 768px) {
+  .product-modal {
+    padding: 20px 16px;
+    max-height: 94vh;
+    border-radius: var(--radius-md);
+  }
   .modal-grid {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
   .large-img-wrapper {
     height: 260px;
+  }
+  .modal-title {
+    font-size: 1.35rem;
+  }
+  .modal-price {
+    font-size: 1.4rem;
   }
   .modal-actions {
     flex-direction: column;

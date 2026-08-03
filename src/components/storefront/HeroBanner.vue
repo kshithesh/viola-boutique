@@ -265,4 +265,37 @@ const cartStore = useCartStore()
     font-size: 2rem;
   }
 }
+
+@media (max-width: 640px) {
+  .hero-banner {
+    margin: 0 8px 20px 8px;
+    padding: 24px 16px;
+    border-radius: var(--radius-md);
+  }
+  .hero-title {
+    font-size: 1.65rem;
+  }
+  .hero-subtitle {
+    font-size: 0.88rem;
+    margin-bottom: 20px;
+  }
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .hero-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .trust-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .trust-divider {
+    display: none;
+  }
+}
 </style>

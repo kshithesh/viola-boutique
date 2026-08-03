@@ -395,4 +395,32 @@ function handleDeleteProduct(product) {
   color: var(--text-muted);
   font-size: 0.9rem;
 }
+
+@media (max-width: 768px) {
+  .inventory-table-container {
+    padding: 14px;
+  }
+  .table-controls-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .table-search-box {
+    width: 100%;
+  }
+  .table-filter-group {
+    width: 100%;
+    flex-direction: column;
+  }
+  .table-select {
+    width: 100%;
+  }
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .inventory-table {
+    min-width: 600px;
+  }
+}
 </style>

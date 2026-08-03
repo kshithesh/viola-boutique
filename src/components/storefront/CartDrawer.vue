@@ -629,4 +629,18 @@ function handleRazorpayCheckout() {
 .mt-3 {
   margin-top: 16px;
 }
+
+@media (max-width: 640px) {
+  .cart-drawer {
+    width: 100%;
+    max-width: 100%;
+  }
+  .drawer-header {
+    padding: 14px 16px;
+  }
+  .drawer-body {
+    padding: 14px 16px;
+    gap: 16px;
+  }
+}
 </style>

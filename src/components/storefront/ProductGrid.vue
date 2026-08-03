@@ -129,4 +129,17 @@ function resetFilters() {
 .mt-3 {
   margin-top: 12px;
 }
+
+@media (max-width: 640px) {
+  .product-grid-section {
+    margin: 0 8px 30px 8px;
+  }
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .section-title {
+    font-size: 1.2rem;
+  }
+}
 </style>

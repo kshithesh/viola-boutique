@@ -296,4 +296,35 @@ function handleAddToCart() {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+@media (max-width: 640px) {
+  .card-body {
+    padding: 10px;
+  }
+  .product-title {
+    font-size: 0.88rem;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+  .product-desc-snippet {
+    display: none;
+  }
+  .current-price {
+    font-size: 1.02rem;
+  }
+  .original-price {
+    font-size: 0.72rem;
+  }
+  .price-stock-row {
+    margin-bottom: 10px;
+    padding-top: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .add-to-cart-btn {
+    padding: 8px 10px;
+    font-size: 0.82rem;
+  }
+}
 </style>

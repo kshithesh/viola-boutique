@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import AppHeader from './components/common/AppHeader.vue'
 import AppFooter from './components/common/AppFooter.vue'
 import NotificationToast from './components/common/NotificationToast.vue'
@@ -19,6 +19,37 @@ const currentView = ref('store') // 'store' | 'admin'
 const quickViewProduct = ref(null)
 const toastRef = ref(null)
 const catalogRef = ref(null)
+
+function updateViewFromRoute() {
+  const path = window.location.pathname
+  if (path.startsWith('/admin')) {
+    currentView.value = 'admin'
+  } else {
+    currentView.value = 'store'
+  }
+}
+
+function handleNavigate(view) {
+  currentView.value = view
+  if (view === 'admin') {
+    if (window.location.pathname !== '/admin') {
+      window.history.pushState(null, '', '/admin')
+    }
+  } else {
+    if (window.location.pathname !== '/') {
+      window.history.pushState(null, '', '/')
+    }
+  }
+}
+
+onMounted(() => {
+  updateViewFromRoute()
+  window.addEventListener('popstate', updateViewFromRoute)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('popstate', updateViewFromRoute)
+})
 
 function showNotification(message, type = 'success') {
   if (toastRef.value) {
@@ -40,7 +71,8 @@ function scrollToCatalog() {
 
     <!-- Application Top Navigation -->
     <AppHeader 
-      v-model:currentView="currentView" 
+      :currentView="currentView"
+      @navigate="handleNavigate" 
     />
 
     <!-- Main Container -->
@@ -81,6 +113,7 @@ function scrollToCatalog() {
       <template v-else-if="currentView === 'admin'">
         <AdminDashboard 
           @notify="showNotification"
+          @navigate="handleNavigate"
         />
       </template>
     </main>

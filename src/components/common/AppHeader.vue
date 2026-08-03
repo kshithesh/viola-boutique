@@ -22,7 +22,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:currentView'])
+const emit = defineEmits(['navigate'])
 
 const catalogStore = useCatalogStore()
 const cartStore = useCartStore()
@@ -46,7 +46,7 @@ function openStylistWhatsApp() {
   <header class="app-header glass-panel">
     <div class="header-container">
       <!-- Brand Logo -->
-      <div class="brand-logo" @click="emit('update:currentView', 'store')">
+      <div class="brand-logo" @click="emit('navigate', 'store')">
         <div class="logo-icon">
           <Crown class="crown-icon" />
         </div>
@@ -62,7 +62,7 @@ function openStylistWhatsApp() {
         <input 
           type="text" 
           v-model="catalogStore.searchQuery" 
-          placeholder="Search bridal lehengas, sarees, shararas, jewelry..." 
+          placeholder="Search lehengas, sarees, jewelry..." 
           class="search-input"
         />
         <button 
@@ -74,9 +74,20 @@ function openStylistWhatsApp() {
         </button>
       </div>
 
-      <!-- Right Actions: Stylist status, View Switcher, Theme Toggle, Cart -->
+      <!-- Right Actions: Stylist status, Return to Store (if on admin), Theme Toggle, Cart -->
       <div class="header-actions">
-        <!-- Live Stylist Status Pill -->
+        <!-- Return to Storefront (Only when on Admin Page) -->
+        <button 
+          v-if="currentView === 'admin'"
+          class="btn btn-secondary btn-sm"
+          @click="emit('navigate', 'store')"
+          title="Return to Customer Storefront"
+        >
+          <Store :size="16" />
+          <span class="action-text">Return to Shop</span>
+        </button>
+
+        <!-- Live Stylist Status Pill (Store View) -->
         <button 
           v-if="currentView === 'store'"
           class="btn btn-secondary btn-sm stylist-status-btn"
@@ -87,29 +98,12 @@ function openStylistWhatsApp() {
           <span class="stylist-text">Stylist Online</span>
         </button>
 
-        <!-- View Toggle (Store vs Admin) -->
-        <button 
-          class="btn view-toggle-btn"
-          :class="currentView === 'admin' ? 'btn-primary' : 'btn-secondary'"
-          @click="emit('update:currentView', currentView === 'store' ? 'admin' : 'store')"
-        >
-          <component :is="currentView === 'store' ? LayoutDashboard : Store" :size="18" />
-          <span class="toggle-text">{{ currentView === 'store' ? 'Inventory Admin' : 'Customer Shop' }}</span>
-          <span 
-            v-if="currentView === 'store' && catalogStore.lowStockProducts.length > 0" 
-            class="low-stock-dot"
-            title="Low stock alerts pending"
-          >
-            {{ catalogStore.lowStockProducts.length }}
-          </span>
-        </button>
-
         <!-- Theme Toggle -->
         <button class="btn btn-secondary btn-icon" @click="toggleTheme" title="Toggle Light/Dark Theme">
           <component :is="isDarkMode ? Sun : Moon" :size="18" />
         </button>
 
-        <!-- Cart Button -->
+        <!-- Cart Button (Store View) -->
         <button 
           v-if="currentView === 'store'"
           class="btn btn-primary cart-trigger-btn"
@@ -291,8 +285,36 @@ function openStylistWhatsApp() {
   border-radius: var(--radius-full);
 }
 
-@media (max-width: 992px) {
-  .stylist-text, .toggle-text, .cart-label {
+@media (max-width: 768px) {
+  .app-header {
+    margin: 8px 8px 16px 8px;
+    padding: 10px 14px;
+  }
+  .header-container {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .brand-name {
+    font-size: 1.25rem;
+  }
+  .brand-subtitle {
+    font-size: 0.65rem;
+  }
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .crown-icon {
+    width: 18px;
+    height: 18px;
+  }
+  .header-search {
+    order: 3;
+    max-width: 100%;
+    width: 100%;
+    margin-top: 4px;
+  }
+  .stylist-text, .action-text, .cart-label {
     display: none;
   }
 }
