@@ -60,9 +60,14 @@ function handleRazorpayCheckout() {
 
   isProcessingPayment.value = true
   cartStore.processRazorpayPayment({
-    onSuccess: ({ orderId, paymentId }) => {
+    onSuccess: ({ orderId, paymentId, whatsappUrl }) => {
       isProcessingPayment.value = false
-      emit('notify', `🎉 Payment successful! Ref #${orderId} (Payment ID: ${paymentId})`, 'success')
+      emit('notify', `🎉 Payment successful! Redirecting to WhatsApp with receipt...`, 'success')
+      if (whatsappUrl) {
+        setTimeout(() => {
+          window.open(whatsappUrl, '_blank')
+        }, 600)
+      }
     },
     onError: (errMsg) => {
       isProcessingPayment.value = false

@@ -239,7 +239,9 @@ export const useCartStore = defineStore('cart', () => {
       },
       handler: function (response) {
         const paymentId = response.razorpay_payment_id || ('pay_' + Math.random().toString(36).substring(2, 10))
-        
+        const currency = settingsStore.settings.currency
+        const storeName = settingsStore.settings.storeName
+
         // Log Order into history
         const newOrderRecord = {
           orderId,
@@ -255,11 +257,43 @@ export const useCartStore = defineStore('cart', () => {
         }
 
         orders.value.unshift(newOrderRecord)
+
+        // Construct WhatsApp confirmation payload with Razorpay Payment ID
+        let message = `✅ *PAID ONLINE VIA RAZORPAY — ${storeName.toUpperCase()}*\n`
+        message += `🆔 *Order Ref:* #${orderId}\n`
+        message += `💳 *Razorpay Payment ID:* ${paymentId}\n`
+        message += `----------------------------------\n`
+        message += `👤 *Customer Info:*\n`
+        message += `• *Name:* ${customerForm.value.customerName || 'Valued Customer'}\n`
+        if (customerForm.value.customerPhone) {
+          message += `• *Phone:* ${customerForm.value.customerPhone}\n`
+        }
+        message += `• *Address:* ${customerForm.value.deliveryAddress || 'Pick-up / Unspecified'}\n`
+        message += `• *Payment:* Razorpay Online (Verified Paid)\n\n`
+
+        message += `📦 *Paid Order Items:*\n`
+        cartItems.value.forEach((item, i) => {
+          const itemSubtotal = (item.product.price * item.quantity).toFixed(2)
+          message += `${i + 1}. *${item.product.name}* (x${item.quantity})\n`
+          message += `   └ Color: ${item.selectedColor} | Price: ${currency}${itemSubtotal}\n`
+        })
+
+        message += `----------------------------------\n`
+        message += `💵 *Subtotal:* ${currency}${cartSubtotal.value.toFixed(2)}\n`
+        message += `🚚 *Shipping:* ${shippingFee.value === 0 ? 'FREE' : currency + shippingFee.value.toFixed(2)}\n`
+        message += `🏷️ *Tax:* ${currency}${taxAmount.value.toFixed(2)}\n`
+        message += `💰 *TOTAL PAID:* *${currency}${grandTotal.value.toFixed(2)}*\n`
+        message += `----------------------------------\n`
+        message += `Payment verified via Razorpay. Please dispatch my order!`
+
+        const targetPhone = settingsStore.settings.whatsappNumber.replace(/\D/g, '')
+        const whatsappUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`
+
         catalogStore.decrementStockBatch(cartItems.value)
         clearCart()
         isCartOpen.value = false
 
-        if (onSuccess) onSuccess({ orderId, paymentId, newOrderRecord })
+        if (onSuccess) onSuccess({ orderId, paymentId, newOrderRecord, whatsappUrl })
       },
       modal: {
         ondismiss: function () {
