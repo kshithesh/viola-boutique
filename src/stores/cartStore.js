@@ -207,6 +207,79 @@ export const useCartStore = defineStore('cart', () => {
     return whatsappUrl
   }
 
+  function processRazorpayPayment({ onSuccess, onError }) {
+    const settingsStore = useSettingsStore()
+    const catalogStore = useCatalogStore()
+
+    if (cartItems.value.length === 0) {
+      if (onError) onError('Your cart is empty.')
+      return
+    }
+
+    if (typeof window.Razorpay !== 'function') {
+      if (onError) onError('Razorpay SDK unavailable. Please check your network connection.')
+      return
+    }
+
+    const orderId = 'VIO-RZP-' + Math.floor(1000 + Math.random() * 9000)
+    const amountInPaise = Math.round(grandTotal.value * 100)
+
+    const options = {
+      key: settingsStore.settings.razorpayKeyId || 'rzp_test_VioraBoutique2026',
+      amount: amountInPaise,
+      currency: 'INR',
+      name: settingsStore.settings.storeName || 'Viora Boutique',
+      description: `Order #${orderId} (${cartTotalItems.value} items)`,
+      prefill: {
+        name: customerForm.value.customerName || '',
+        contact: customerForm.value.customerPhone || ''
+      },
+      theme: {
+        color: '#b45309'
+      },
+      handler: function (response) {
+        const paymentId = response.razorpay_payment_id || ('pay_' + Math.random().toString(36).substring(2, 10))
+        
+        // Log Order into history
+        const newOrderRecord = {
+          orderId,
+          timestamp: new Date().toISOString(),
+          customerName: customerForm.value.customerName || 'Valued Customer',
+          customerPhone: customerForm.value.customerPhone || 'N/A',
+          address: customerForm.value.deliveryAddress || 'N/A',
+          paymentMethod: 'Razorpay Online (UPI/Cards)',
+          paymentId: paymentId,
+          items: [...cartItems.value],
+          totalAmount: grandTotal.value,
+          status: 'Paid via Razorpay'
+        }
+
+        orders.value.unshift(newOrderRecord)
+        catalogStore.decrementStockBatch(cartItems.value)
+        clearCart()
+        isCartOpen.value = false
+
+        if (onSuccess) onSuccess({ orderId, paymentId, newOrderRecord })
+      },
+      modal: {
+        ondismiss: function () {
+          if (onError) onError('Payment modal closed.')
+        }
+      }
+    }
+
+    try {
+      const rzp = new window.Razorpay(options)
+      rzp.on('payment.failed', function (resp) {
+        if (onError) onError(resp.error?.description || 'Payment failed.')
+      })
+      rzp.open()
+    } catch (e) {
+      console.error('Failed to launch Razorpay checkout modal', e)
+      if (onError) onError('Unable to open Razorpay payment window. Please check your Key ID.')
+    }
+  }
+
   function updateOrderStatus(orderId, newStatus) {
     const ord = orders.value.find(o => o.orderId === orderId)
     if (ord) {
@@ -230,6 +303,7 @@ export const useCartStore = defineStore('cart', () => {
     removeFromCart,
     clearCart,
     checkoutViaWhatsApp,
+    processRazorpayPayment,
     updateOrderStatus
   }
 })

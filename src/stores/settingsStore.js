@@ -16,7 +16,9 @@ export const useSettingsStore = defineStore('settings', () => {
     enableLowStockAlerts: true,
     lowStockThreshold: 5,
     businessAddress: 'Road No. 36, Jubilee Hills, Hyderabad, Telangana 500033',
-    welcomeMessage: 'Namaste! I would like to inquire about an order from Viora Boutique Hyderabad.'
+    welcomeMessage: 'Namaste! I would like to inquire about an order from Viora Boutique Hyderabad.',
+    razorpayKeyId: 'rzp_test_VioraBoutique2026', // Razorpay Key ID (Test / Live)
+    enableRazorpay: true // Toggle online Razorpay payment option
   }
 
   const settings = ref(loadSettings())

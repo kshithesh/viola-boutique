@@ -12,7 +12,9 @@ import {
   Phone, 
   CreditCard, 
   FileText,
-  Sparkles
+  Sparkles,
+  ShieldCheck,
+  Zap
 } from 'lucide-vue-next'
 import { useCartStore } from '../../stores/cartStore.js'
 import { useSettingsStore } from '../../stores/settingsStore.js'
@@ -22,8 +24,9 @@ const cartStore = useCartStore()
 const settingsStore = useSettingsStore()
 
 const formErrors = ref({})
+const isProcessingPayment = ref(false)
 
-function validateAndCheckout() {
+function validateForm() {
   formErrors.value = {}
 
   if (!cartStore.customerForm.customerName.trim()) {
@@ -33,8 +36,12 @@ function validateAndCheckout() {
     formErrors.value.deliveryAddress = 'Please enter your delivery address'
   }
 
-  if (Object.keys(formErrors.value).length > 0) {
-    emit('notify', 'Please fill out required customer fields before sending order.', 'error')
+  return Object.keys(formErrors.value).length === 0
+}
+
+function validateAndCheckout() {
+  if (!validateForm()) {
+    emit('notify', 'Please fill out required customer fields before placing order.', 'error')
     return
   }
 
@@ -43,6 +50,27 @@ function validateAndCheckout() {
     emit('notify', 'Order placed! Redirecting to WhatsApp...', 'success')
     window.open(whatsappUrl, '_blank')
   }
+}
+
+function handleRazorpayCheckout() {
+  if (!validateForm()) {
+    emit('notify', 'Please enter your name and delivery address before paying.', 'error')
+    return
+  }
+
+  isProcessingPayment.value = true
+  cartStore.processRazorpayPayment({
+    onSuccess: ({ orderId, paymentId }) => {
+      isProcessingPayment.value = false
+      emit('notify', `🎉 Payment successful! Ref #${orderId} (Payment ID: ${paymentId})`, 'success')
+    },
+    onError: (errMsg) => {
+      isProcessingPayment.value = false
+      if (errMsg !== 'Payment modal closed.') {
+        emit('notify', errMsg, 'error')
+      }
+    }
+  })
 }
 </script>
 
@@ -168,9 +196,10 @@ function validateAndCheckout() {
             <div class="input-with-icon">
               <CreditCard :size="16" class="input-icon" />
               <select v-model="cartStore.customerForm.paymentMethod" class="input-field pl-icon">
+                <option value="Razorpay Online (UPI/Cards)" v-if="settingsStore.settings.enableRazorpay">⚡ Razorpay Online (UPI / Card / NetBanking)</option>
                 <option value="Cash on Delivery">Cash on Delivery (COD)</option>
-                <option value="UPI / Instant Bank Transfer">UPI / Instant Bank Transfer</option>
-                <option value="Card on Delivery">Card / POS machine on Delivery</option>
+                <option value="UPI / Instant Bank Transfer">UPI / Direct Bank Transfer</option>
+                <option value="Card on Delivery">Card / POS on Delivery</option>
               </select>
             </div>
           </div>
@@ -189,7 +218,7 @@ function validateAndCheckout() {
           </div>
         </div>
 
-        <!-- Order Summary & WhatsApp Trigger -->
+        <!-- Order Summary & Checkout Actions -->
         <div class="order-summary-section">
           <div class="summary-line">
             <span>Subtotal</span>
@@ -212,12 +241,23 @@ function validateAndCheckout() {
             <span class="total-price">{{ settingsStore.formatPrice(cartStore.grandTotal) }}</span>
           </div>
 
-          <button class="btn btn-whatsapp checkout-btn" @click="validateAndCheckout">
-            <MessageSquare :size="20" /> Order via WhatsApp
-          </button>
+          <div class="checkout-actions-grid mt-3">
+            <button 
+              v-if="settingsStore.settings.enableRazorpay" 
+              class="btn btn-primary checkout-btn razorpay-btn" 
+              @click="handleRazorpayCheckout"
+              :disabled="isProcessingPayment"
+            >
+              <Zap :size="18" /> Pay Online via Razorpay
+            </button>
+
+            <button class="btn btn-whatsapp checkout-btn" @click="validateAndCheckout">
+              <MessageSquare :size="18" /> Order via WhatsApp / COD
+            </button>
+          </div>
           
-          <p class="whatsapp-hint">
-            <Sparkles :size="13" /> Generates formatted invoice payload directly in your WhatsApp app.
+          <p class="whatsapp-hint mt-2">
+            <ShieldCheck :size="13" /> 256-bit encrypted Razorpay SSL payments & WhatsApp concierge checkout.
           </p>
         </div>
       </div>
@@ -507,13 +547,38 @@ function validateAndCheckout() {
 
 .checkout-btn {
   width: 100%;
-  padding: 14px;
-  font-size: 1.05rem;
-  margin-top: 12px;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.checkout-actions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.razorpay-btn {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border: none;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+}
+
+.razorpay-btn:hover {
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45);
+}
+
+.mt-2 {
+  margin-top: 8px;
 }
 
 .whatsapp-hint {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   text-align: center;
   display: flex;

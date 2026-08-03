@@ -89,6 +89,7 @@ function openWhatsAppChatWithCustomer(order) {
               class="status-select"
               :class="`status-${order.status.toLowerCase().replace(/\s+/g, '-')}`"
             >
+              <option value="Paid via Razorpay">Paid via Razorpay</option>
               <option value="Pending Contact">Pending Contact</option>
               <option value="Confirmed">Confirmed</option>
               <option value="Shipped">Shipped</option>
@@ -115,7 +116,11 @@ function openWhatsAppChatWithCustomer(order) {
             </div>
             <div class="info-row">
               <Sparkles :size="15" class="info-icon" />
-              <span><strong>Payment:</strong> {{ order.paymentMethod }}</span>
+              <span><strong>Payment Method:</strong> {{ order.paymentMethod }}</span>
+            </div>
+            <div class="info-row" v-if="order.paymentId">
+              <CheckCircle2 :size="15" class="info-icon text-success" />
+              <span><strong>Razorpay Payment ID:</strong> <code>{{ order.paymentId }}</code></span>
             </div>
           </div>
 
@@ -269,6 +274,7 @@ function openWhatsAppChatWithCustomer(order) {
   border: 1px solid transparent;
 }
 
+.status-paid-via-razorpay { background: rgba(2, 132, 199, 0.18); color: var(--accent-info); border-color: rgba(2, 132, 199, 0.4); }
 .status-pending-contact { background: rgba(245, 158, 11, 0.18); color: var(--accent-gold); border-color: rgba(245, 158, 11, 0.4); }
 .status-confirmed { background: rgba(99, 102, 241, 0.18); color: var(--accent-primary); border-color: rgba(99, 102, 241, 0.4); }
 .status-shipped { background: rgba(6, 182, 212, 0.18); color: var(--accent-info); border-color: rgba(6, 182, 212, 0.4); }

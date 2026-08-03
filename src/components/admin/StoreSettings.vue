@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { Save, Phone, DollarSign, Store, Truck, Lock, MapPin } from 'lucide-vue-next'
+import { Save, Phone, DollarSign, Store, Truck, Lock, MapPin, CreditCard } from 'lucide-vue-next'
 import { useSettingsStore } from '../../stores/settingsStore.js'
 
 const emit = defineEmits(['notify'])
@@ -26,11 +26,38 @@ function handleSaveSettings() {
   <div class="store-settings-container glass-panel">
     <div class="settings-header">
       <h3>Store & Security Configuration</h3>
-      <p class="subtitle">Configure your WhatsApp phone number, store currency, shipping rules, and Admin Dashboard password.</p>
+      <p class="subtitle">Configure your WhatsApp phone number, Razorpay API Keys, store currency, shipping rules, and Admin Dashboard password.</p>
     </div>
 
     <form @submit.prevent="handleSaveSettings" class="settings-form">
       <div class="settings-grid">
+        <!-- Razorpay Payment Gateway Settings -->
+        <div class="settings-card highlight-card">
+          <h4 class="card-title"><CreditCard :size="16" /> Razorpay Payment Gateway</h4>
+          <p class="card-subtitle">Enable instant online checkout via UPI (Google Pay, PhonePe, Paytm), Cards & NetBanking.</p>
+
+          <div class="form-group mt-3">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="formData.enableRazorpay" />
+              <span>Enable Razorpay Online Checkout</span>
+            </label>
+          </div>
+
+          <div class="form-group mt-3" v-if="formData.enableRazorpay">
+            <label class="input-label">Razorpay Key ID (Test or Live) *</label>
+            <input 
+              type="text" 
+              v-model="formData.razorpayKeyId" 
+              required 
+              class="input-field" 
+              placeholder="e.g. rzp_test_..." 
+            />
+            <span class="field-hint">
+              Default Test Key: <code>rzp_test_VioraBoutique2026</code>. Get your live keys from <a href="https://dashboard.razorpay.com/" target="_blank" rel="noopener">Razorpay Dashboard</a>.
+            </span>
+          </div>
+        </div>
+
         <!-- WhatsApp Phone & Business Profile -->
         <div class="settings-card">
           <h4 class="card-title"><Phone :size="16" /> WhatsApp Business Contact</h4>
@@ -59,7 +86,7 @@ function handleSaveSettings() {
         </div>
 
         <!-- Admin Dashboard Password Security -->
-        <div class="settings-card highlight-card">
+        <div class="settings-card">
           <h4 class="card-title"><Lock :size="16" /> Admin Dashboard Password</h4>
           <p class="card-subtitle">Password required to unlock inventory management & orders log.</p>
 
@@ -210,8 +237,21 @@ function handleSaveSettings() {
   display: block;
 }
 
-.mt-3 {
-  margin-top: 12px;
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
 }
 
 .settings-action-bar {
