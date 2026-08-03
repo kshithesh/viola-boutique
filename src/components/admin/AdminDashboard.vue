@@ -61,7 +61,9 @@ function handleLogin() {
     emit('notify', 'Admin access granted. Welcome to Inventory Manager!', 'success')
     inputPassword.value = ''
   } else {
-    authError.value = 'Incorrect password. Default password is "viora123".'
+    authError.value = settingsStore.settings.adminPassword === 'viora123'
+      ? 'Incorrect password. Default password is "viora123".'
+      : 'Incorrect admin password. Please try your customized password.'
     emit('notify', 'Invalid admin password.', 'error')
   }
 }
@@ -136,7 +138,12 @@ function handleResetDemoData() {
               </button>
             </div>
             <span v-if="authError" class="error-text">{{ authError }}</span>
-            <span class="hint-text">Default Password: <strong>viora123</strong></span>
+            <span class="hint-text" v-if="settingsStore.settings.adminPassword === 'viora123'">
+              Default Password: <strong>viora123</strong>
+            </span>
+            <span class="hint-text text-success" v-else>
+              Customized admin password active.
+            </span>
           </div>
 
           <button type="submit" class="btn btn-primary auth-submit-btn">

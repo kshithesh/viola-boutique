@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { Save, Phone, DollarSign, Store, Truck, Lock, MapPin } from 'lucide-vue-next'
 import { useSettingsStore } from '../../stores/settingsStore.js'
 
@@ -7,6 +7,14 @@ const emit = defineEmits(['notify'])
 const settingsStore = useSettingsStore()
 
 const formData = ref({ ...settingsStore.settings })
+
+watch(
+  () => settingsStore.settings,
+  (newSettings) => {
+    formData.value = { ...newSettings }
+  },
+  { deep: true }
+)
 
 function handleSaveSettings() {
   settingsStore.updateSettings(formData.value)
@@ -64,7 +72,12 @@ function handleSaveSettings() {
               class="input-field" 
               placeholder="e.g. viora123" 
             />
-            <span class="field-hint">Used to unlock the Admin Dashboard view. Default: viora123</span>
+            <span class="field-hint" v-if="formData.adminPassword === 'viora123'">
+              Status: Using Default Password (viora123). Change this for better security.
+            </span>
+            <span class="field-hint text-success" v-else>
+              Status: Customized Password saved. Remember your new password for login!
+            </span>
           </div>
         </div>
 

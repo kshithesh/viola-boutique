@@ -31,20 +31,26 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
+  function saveToLocalStorage(val) {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(val))
+    } catch (e) {
+      console.error('Failed to save store settings to localStorage', e)
+    }
+  }
+
   watch(
     settings,
     (newVal) => {
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newVal))
-      } catch (e) {
-        console.error('Failed to save store settings to localStorage', e)
-      }
+      saveToLocalStorage(newVal)
     },
     { deep: true }
   )
 
   function updateSettings(updatedFields) {
-    settings.value = { ...settings.value, ...updatedFields }
+    const updated = { ...settings.value, ...updatedFields }
+    settings.value = updated
+    saveToLocalStorage(updated)
   }
 
   function formatPrice(amount) {
