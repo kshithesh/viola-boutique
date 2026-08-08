@@ -13,8 +13,8 @@ import type {
 let clientInstance: Client | null = null
 
 export function isTursoConfigured(): boolean {
-  const url = import.meta.env.VITE_TURSO_DATABASE_URL || ''
-  const authToken = import.meta.env.VITE_TURSO_AUTH_TOKEN || ''
+  const url = import.meta.env.VITE_TURSO_DATABASE_URL || import.meta.env.TURSO_DATABASE_URL || ''
+  const authToken = import.meta.env.VITE_TURSO_AUTH_TOKEN || import.meta.env.TURSO_AUTH_TOKEN || ''
   return Boolean(url && authToken)
 }
 
@@ -58,8 +58,8 @@ async function sendOtpViaWati(phone: string, otp: string): Promise<void> {
 function getTursoClient(): Client | null {
   if (clientInstance) return clientInstance
 
-  const url = import.meta.env.VITE_TURSO_DATABASE_URL || ''
-  const authToken = import.meta.env.VITE_TURSO_AUTH_TOKEN || ''
+  const url = import.meta.env.VITE_TURSO_DATABASE_URL || import.meta.env.TURSO_DATABASE_URL || ''
+  const authToken = import.meta.env.VITE_TURSO_AUTH_TOKEN || import.meta.env.TURSO_AUTH_TOKEN || ''
 
   if (!url || !authToken) return null
 

@@ -4,6 +4,7 @@ import fileURLToPath from 'node:url'
 
 export default defineConfig({
   plugins: [vue()],
+  envPrefix: ['VITE_', 'TURSO_'],
   resolve: {
     alias: {
       '@': fileURLToPath.fileURLToPath(new URL('./src', import.meta.url))
@@ -11,6 +12,6 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    strictPort: true  // Error if port is taken, rather than silently switching (breaks Google OAuth)
+    strictPort: true // Error if port is taken, rather than silently switching (breaks Google OAuth)
   }
 })
