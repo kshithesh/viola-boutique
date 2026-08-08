@@ -4,26 +4,30 @@
   --font-body: 'Plus Jakarta Sans', -apple-system, sans-serif;
 
   /* Luxury Boutique Beige & Terracotta Palette */
-  --bg-dark: #fbf9f4;            /* Soft warm linen background */
-  --bg-surface: #ffffff;         /* Pure white cards */
-  --bg-surface-elevated: #f5efe6;/* Warm champagne cream elevation */
+  --bg-dark: #fbf9f4; /* Soft warm linen background */
+  --bg-surface: #ffffff; /* Pure white cards */
+  --bg-surface-elevated: #f5efe6; /* Warm champagne cream elevation */
+  --bg-input: #ffffff; /* Crisp white input background distinct from warm #f5efe6 cards */
+  --bg-input-focus: #ffffff;
+  --border-input: rgba(180, 140, 100, 0.32);
+  --shadow-input: inset 0 1px 3px rgba(70, 45, 20, 0.05);
   --bg-glass: rgba(251, 249, 244, 0.9);
   --border-color: rgba(180, 140, 100, 0.18);
   --border-color-hover: rgba(180, 83, 9, 0.4);
 
-  --text-primary: #251b14;       /* Deep royal dark espresso */
-  --text-secondary: #635043;     /* Soft warm taupe */
-  --text-muted: #948070;         /* Muted champagne bronze */
+  --text-primary: #251b14; /* Deep royal dark espresso */
+  --text-secondary: #635043; /* Soft warm taupe */
+  --text-muted: #948070; /* Muted champagne bronze */
 
-  --accent-primary: #b45309;     /* Royal Terracotta Gold */
+  --accent-primary: #b45309; /* Royal Terracotta Gold */
   --accent-primary-hover: #92400e;
   --accent-primary-glow: rgba(180, 83, 9, 0.18);
 
-  --accent-whatsapp: #25d366;    /* WhatsApp Emerald */
+  --accent-whatsapp: #25d366; /* WhatsApp Emerald */
   --accent-whatsapp-hover: #1ebe56;
   --accent-whatsapp-glow: rgba(37, 211, 102, 0.22);
 
-  --accent-gold: #d97706;       /* Nizam Warm Gold */
+  --accent-gold: #d97706; /* Nizam Warm Gold */
   --accent-danger: #dc2626;
   --accent-success: #059669;
 
@@ -39,10 +43,14 @@
   --shadow-wa-glow: 0 0 25px var(--accent-whatsapp-glow);
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   --bg-dark: #191411;
   --bg-surface: #241c18;
   --bg-surface-elevated: #2f2520;
+  --bg-input: #18120f; /* Deep recessed dark input distinct from #2f2520 card background */
+  --bg-input-focus: #1c1511;
+  --border-input: rgba(217, 119, 6, 0.25);
+  --shadow-input: inset 0 1px 3px rgba(0, 0, 0, 0.3);
   --bg-glass: rgba(36, 28, 24, 0.9);
   --border-color: rgba(217, 119, 6, 0.15);
   --border-color-hover: rgba(217, 119, 6, 0.4);
@@ -68,7 +76,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-heading);
   letter-spacing: -0.01em;
   color: var(--text-primary);
@@ -93,18 +106,33 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Utility Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideInRight {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 15px var(--accent-whatsapp-glow); }
-  50% { box-shadow: 0 0 25px rgba(37, 211, 102, 0.4); }
+  0%,
+  100% {
+    box-shadow: 0 0 15px var(--accent-whatsapp-glow);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(37, 211, 102, 0.4);
+  }
 }
 
 .animate-fade-in {
@@ -226,23 +254,37 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: var(--shadow-md);
 }
 
-/* Input Fields */
-.input-field {
+/* Input Fields & Controls */
+.input-field,
+.table-search-input,
+.table-select {
   width: 100%;
   padding: 10px 16px;
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-color);
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-input);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: 0.95rem;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: var(--shadow-input);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.input-field:focus {
+.input-field:hover,
+.table-search-input:hover,
+.table-select:hover {
+  border-color: var(--border-color-hover);
+}
+
+.input-field:focus,
+.table-search-input:focus,
+.table-select:focus {
+  background-color: var(--bg-input-focus);
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px var(--accent-primary-glow);
+  box-shadow:
+    0 0 0 3px var(--accent-primary-glow),
+    var(--shadow-input);
 }
 
 .input-label {
@@ -259,10 +301,32 @@ h1, h2, h3, h4, h5, h6 {
   inset: 0;
   background: rgba(37, 27, 20, 0.65);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   animation: fadeIn 0.2s ease-out;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+}
+
+/* Prevent forced zoom on iOS Safari input focus */
+@media (max-width: 768px) {
+  input[type='text'],
+  input[type='number'],
+  input[type='email'],
+  input[type='tel'],
+  input[type='password'],
+  input[type='url'],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }

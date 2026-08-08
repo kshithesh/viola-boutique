@@ -1,12 +1,30 @@
-<script setup>
-import { ref, watch } from 'vue'
-import { Save, Phone, DollarSign, Store, Truck, Lock, MapPin, CreditCard } from 'lucide-vue-next'
-import { useSettingsStore } from '../../stores/settingsStore.js'
+<script setup lang="ts">
+import { ref, watch, onMounted } from 'vue'
+import {
+  Save,
+  Store,
+  Lock,
+  Database,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  Layout
+} from '@lucide/vue'
+import type { StoreSettings } from '../../types'
+import { useSettingsStore } from '../../stores/settingsStore'
+import { isTursoConfigured, initDatabase } from '../../services/tursoService'
 
-const emit = defineEmits(['notify'])
+const emit = defineEmits<{
+  (e: 'notify', message: string, type?: 'success' | 'error' | 'info'): void
+}>()
+
 const settingsStore = useSettingsStore()
 
-const formData = ref({ ...settingsStore.settings })
+const formData = ref<StoreSettings>({ ...settingsStore.settings })
+const isCheckingDb = ref<boolean>(false)
+const dbStatus = ref<'unknown' | 'online' | 'offline'>('unknown')
+const dbMessage = ref<string>('')
 
 watch(
   () => settingsStore.settings,
@@ -16,7 +34,56 @@ watch(
   { deep: true }
 )
 
-function handleSaveSettings() {
+onMounted(() => {
+  checkDbStatus(false)
+})
+
+async function checkDbStatus(userInitiated = true): Promise<void> {
+  isCheckingDb.value = true
+  dbMessage.value = ''
+
+  const configured = isTursoConfigured()
+
+  if (!configured) {
+    dbStatus.value = 'offline'
+    dbMessage.value =
+      'Turso environment variables (VITE_TURSO_DATABASE_URL & VITE_TURSO_AUTH_TOKEN) are not set. Operating in local storage mode.'
+    if (userInitiated) {
+      emit('notify', 'Turso DB credentials not configured in environment variables.', 'info')
+    }
+    isCheckingDb.value = false
+    return
+  }
+
+  try {
+    const success = await initDatabase()
+    if (success) {
+      dbStatus.value = 'online'
+      dbMessage.value =
+        'Connection successful! Turso edge database is online and fully synchronized.'
+      if (userInitiated) {
+        emit('notify', 'Turso Edge Database is online & connected!', 'success')
+      }
+    } else {
+      dbStatus.value = 'offline'
+      dbMessage.value =
+        'Unable to reach Turso database endpoints. Operating in local storage fallback mode.'
+      if (userInitiated) {
+        emit('notify', 'Could not reach Turso DB endpoints.', 'error')
+      }
+    }
+  } catch (err: any) {
+    dbStatus.value = 'offline'
+    dbMessage.value = err.message || 'Database connection test failed.'
+    if (userInitiated) {
+      emit('notify', `DB Test Failed: ${err.message}`, 'error')
+    }
+  } finally {
+    isCheckingDb.value = false
+  }
+}
+
+function handleSaveSettings(): void {
   settingsStore.updateSettings(formData.value)
   emit('notify', 'Store configuration & admin password saved!', 'success')
 }
@@ -26,83 +93,93 @@ function handleSaveSettings() {
   <div class="store-settings-container glass-panel">
     <div class="settings-header">
       <h3>Store & Security Configuration</h3>
-      <p class="subtitle">Configure your WhatsApp phone number, Razorpay API Keys, store currency, shipping rules, and Admin Dashboard password.</p>
+      <p class="subtitle">
+        Configure store identity, business address, Admin Dashboard password, hero banner copy, and
+        test live Turso DB connectivity. Manage payment gateways and WhatsApp channels in Payment
+        Settings & Gateways.
+      </p>
     </div>
 
-    <form @submit.prevent="handleSaveSettings" class="settings-form">
+    <form class="settings-form" @submit.prevent="handleSaveSettings">
       <div class="settings-grid">
-        <!-- Razorpay Payment Gateway Settings -->
+        <!-- Turso Edge Database Online Status Card -->
         <div class="settings-card highlight-card">
-          <h4 class="card-title"><CreditCard :size="16" /> Razorpay Payment Gateway</h4>
-          <p class="card-subtitle">Enable instant online checkout via UPI (Google Pay, PhonePe, Paytm), Cards & NetBanking.</p>
-
-          <div class="form-group mt-3">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="formData.enableRazorpay" />
-              <span>Enable Razorpay Online Checkout</span>
-            </label>
-          </div>
-
-          <div class="form-group mt-3" v-if="formData.enableRazorpay">
-            <label class="input-label">Razorpay Key ID (Test or Live) *</label>
-            <input 
-              type="text" 
-              v-model="formData.razorpayKeyId" 
-              required 
-              class="input-field" 
-              placeholder="e.g. rzp_test_..." 
-            />
-            <span class="field-hint">
-              Default Test Key: <code>rzp_test_VioraBoutique2026</code>. Get your live keys from <a href="https://dashboard.razorpay.com/" target="_blank" rel="noopener">Razorpay Dashboard</a>.
+          <div class="card-header-flex">
+            <div>
+              <h4 class="card-title"><Database :size="16" /> Turso Edge Database Connection</h4>
+              <p class="card-subtitle">
+                Secrets are configured via Vercel Environment Variables. Check database connection
+                health below.
+              </p>
+            </div>
+            <span
+              class="status-pill"
+              :class="dbStatus === 'online' ? 'status-online' : 'status-offline'"
+            >
+              <span
+                class="status-dot"
+                :class="dbStatus === 'online' ? 'bg-success animate-pulse' : 'bg-warning'"
+              ></span>
+              {{ dbStatus === 'online' ? 'DB Online & Syncing' : 'Local Storage Fallback' }}
             </span>
           </div>
-        </div>
 
-        <!-- WhatsApp Phone & Business Profile -->
-        <div class="settings-card">
-          <h4 class="card-title"><Phone :size="16" /> WhatsApp Business Contact</h4>
-          <p class="card-subtitle">Orders generated in the cart will be sent to this number.</p>
+          <div class="db-details-box mt-3">
+            <div class="info-row">
+              <span class="info-label">Vercel / ENV Config:</span>
+              <span
+                v-if="isTursoConfigured()"
+                class="text-success font-semibold flex items-center gap-1"
+              >
+                <CheckCircle2 :size="14" /> Secrets Configured
+              </span>
+              <span v-else class="text-warning font-semibold flex items-center gap-1">
+                <AlertCircle :size="14" /> Not Configured in ENV
+              </span>
+            </div>
 
-          <div class="form-group mt-3">
-            <label class="input-label">Target WhatsApp Number (Country Code + Digits) *</label>
-            <input 
-              type="text" 
-              v-model="formData.whatsappNumber" 
-              required 
-              class="input-field" 
-              placeholder="e.g. 919876543210" 
-            />
-            <span class="field-hint">Do not include plus signs or spaces. Example: 919876543210</span>
+            <p v-if="dbMessage" class="db-message-text mt-2">
+              {{ dbMessage }}
+            </p>
           </div>
 
-          <div class="form-group mt-3">
-            <label class="input-label">Welcome Greeting Message</label>
-            <input 
-              type="text" 
-              v-model="formData.welcomeMessage" 
-              class="input-field" 
-            />
+          <div class="mt-4 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              :disabled="isCheckingDb"
+              @click="checkDbStatus(true)"
+            >
+              <RefreshCw :size="14" :class="{ 'animate-spin': isCheckingDb }" />
+              <span>{{ isCheckingDb ? 'Testing Connection...' : 'Check DB Connection' }}</span>
+            </button>
+
+            <span class="field-hint text-muted">
+              Database URL & Auth token managed via Vercel Dashboard secrets.
+            </span>
           </div>
         </div>
 
         <!-- Admin Dashboard Password Security -->
         <div class="settings-card">
           <h4 class="card-title"><Lock :size="16" /> Admin Dashboard Password</h4>
-          <p class="card-subtitle">Password required to unlock inventory management & orders log.</p>
+          <p class="card-subtitle">
+            Password required to unlock inventory management & orders log.
+          </p>
 
           <div class="form-group mt-3">
             <label class="input-label">Admin Password *</label>
-            <input 
-              type="text" 
-              v-model="formData.adminPassword" 
-              required 
-              class="input-field" 
-              placeholder="e.g. viora123" 
+            <input
+              v-model="formData.adminPassword"
+              type="text"
+              required
+              class="input-field"
+              placeholder="e.g. viora123"
             />
-            <span class="field-hint" v-if="formData.adminPassword === 'viora123'">
+            <span v-if="formData.adminPassword === 'viora123'" class="field-hint">
               Status: Using Default Password (viora123). Change this for better security.
             </span>
-            <span class="field-hint text-success" v-else>
+            <span v-else class="field-hint text-success">
               Status: Customized Password saved. Remember your new password for login!
             </span>
           </div>
@@ -114,53 +191,135 @@ function handleSaveSettings() {
 
           <div class="form-group mt-3">
             <label class="input-label">Store Brand Name *</label>
-            <input type="text" v-model="formData.storeName" required class="input-field" />
+            <input v-model="formData.storeName" type="text" required class="input-field" />
           </div>
 
           <div class="form-group mt-3">
             <label class="input-label">Tagline</label>
-            <input type="text" v-model="formData.tagline" class="input-field" />
+            <input v-model="formData.tagline" type="text" class="input-field" />
           </div>
 
           <div class="form-group mt-3">
             <label class="input-label">Business Address</label>
-            <input type="text" v-model="formData.businessAddress" class="input-field" />
+            <input v-model="formData.businessAddress" type="text" class="input-field" />
           </div>
         </div>
 
-        <!-- Currency & Shipping -->
-        <div class="settings-card">
-          <h4 class="card-title"><Truck :size="16" /> Pricing & Shipping Rules</h4>
+        <!-- Storefront Hero Banner Copy & Call to Action -->
+        <div class="settings-card span-full">
+          <h4 class="card-title">
+            <Layout :size="16" /> Storefront Hero Banner Content & Headlines
+          </h4>
+          <p class="card-subtitle">
+            Customize main banner copy, highlight text, subtitle, button label, and floating
+            featured item cards.
+          </p>
 
-          <div class="form-group mt-3">
-            <label class="input-label">Currency Symbol</label>
-            <select v-model="formData.currency" class="input-field">
-              <option value="₹">₹ (INR)</option>
-              <option value="$">$ (USD)</option>
-              <option value="€">€ (EUR)</option>
-              <option value="£">£ (GBP)</option>
-              <option value="AED">AED (Dirhams)</option>
-            </select>
+          <div class="banner-form-grid mt-3">
+            <div class="form-group">
+              <label class="input-label">Banner Main Headline</label>
+              <input
+                v-model="formData.heroTitleMain"
+                type="text"
+                class="input-field"
+                placeholder="Royal Ethnic Couture."
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="input-label">WhatsApp Highlight Text</label>
+              <input
+                v-model="formData.heroTitleHighlight"
+                type="text"
+                class="input-field"
+                placeholder="Order Instantly on WhatsApp."
+              />
+            </div>
+
+            <div class="form-group span-full">
+              <label class="input-label">Banner Subtitle</label>
+              <textarea
+                v-model="formData.heroSubtitle"
+                rows="2"
+                class="input-field textarea-field"
+                placeholder="Explore our curated collection of Hyderabadi Zardozi lehengas..."
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="input-label">Header Badge / Pill Text</label>
+              <input
+                v-model="formData.heroPillText"
+                type="text"
+                class="input-field"
+                placeholder="Jubilee Hills, Hyderabad • Personal Styling"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="input-label">Catalog Button Label</label>
+              <input
+                v-model="formData.heroButtonText"
+                type="text"
+                class="input-field"
+                placeholder="Explore Boutique Collection"
+              />
+            </div>
           </div>
 
-          <div class="form-group mt-3">
-            <label class="input-label">Standard Delivery Fee (₹)</label>
-            <input 
-              type="number" 
-              step="1" 
-              v-model.number="formData.deliveryFee" 
-              class="input-field" 
-            />
-          </div>
+          <!-- Floating Featured Cards Customization -->
+          <div class="cards-grid mt-4">
+            <!-- Floating Card 1 Controls -->
+            <div class="card-group-box">
+              <h5 class="card-title text-accent">
+                <Sparkles :size="14" /> Floating Card 1 (Top Card)
+              </h5>
+              <div class="form-group mt-2">
+                <label class="input-label">Title</label>
+                <input v-model="formData.heroCard1Title" type="text" class="input-field" />
+              </div>
+              <div class="form-group mt-2">
+                <label class="input-label">Price (₹)</label>
+                <input v-model.number="formData.heroCard1Price" type="number" class="input-field" />
+              </div>
+              <div class="form-group mt-2">
+                <label class="input-label">Badge Label</label>
+                <input v-model="formData.heroCard1Badge" type="text" class="input-field" />
+              </div>
+              <div class="form-group mt-2">
+                <label class="input-label">Image URL</label>
+                <input v-model="formData.heroCard1Image" type="url" class="input-field" />
+              </div>
+              <div v-if="formData.heroCard1Image" class="preview-mini mt-2">
+                <img :src="formData.heroCard1Image" alt="Card 1 Preview" />
+              </div>
+            </div>
 
-          <div class="form-group mt-3">
-            <label class="input-label">Free Shipping Threshold (₹)</label>
-            <input 
-              type="number" 
-              step="100" 
-              v-model.number="formData.freeShippingThreshold" 
-              class="input-field" 
-            />
+            <!-- Floating Card 2 Controls -->
+            <div class="card-group-box">
+              <h5 class="card-title text-accent">
+                <Sparkles :size="14" /> Floating Card 2 (Bottom Card)
+              </h5>
+              <div class="form-group mt-2">
+                <label class="input-label">Title</label>
+                <input v-model="formData.heroCard2Title" type="text" class="input-field" />
+              </div>
+              <div class="form-group mt-2">
+                <label class="input-label">Price (₹)</label>
+                <input v-model.number="formData.heroCard2Price" type="number" class="input-field" />
+              </div>
+              <div class="form-group mt-2">
+                <label class="input-label">Badge Label</label>
+                <input v-model="formData.heroCard2Badge" type="text" class="input-field" />
+              </div>
+              <div class="form-group mt-2">
+                <label class="input-label">Image URL</label>
+                <input v-model="formData.heroCard2Image" type="url" class="input-field" />
+              </div>
+              <div v-if="formData.heroCard2Image" class="preview-mini mt-2">
+                <img :src="formData.heroCard2Image" alt="Card 2 Preview" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -205,14 +364,31 @@ function handleSaveSettings() {
   background: var(--bg-surface-elevated);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 22px;
   display: flex;
   flex-direction: column;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.settings-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-color-hover);
 }
 
 .highlight-card {
   border-color: rgba(180, 83, 9, 0.35);
   background: rgba(180, 83, 9, 0.05);
+}
+
+.card-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .card-title {
@@ -227,6 +403,69 @@ function handleSaveSettings() {
 
 .card-subtitle {
   font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.status-online {
+  background: rgba(5, 150, 105, 0.15);
+  color: var(--accent-success);
+  border: 1px solid rgba(5, 150, 105, 0.3);
+}
+
+.status-offline {
+  background: rgba(217, 119, 6, 0.15);
+  color: var(--accent-gold);
+  border: 1px solid rgba(217, 119, 6, 0.3);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.bg-success {
+  background-color: var(--accent-success);
+}
+.bg-warning {
+  background-color: var(--accent-gold);
+}
+
+.db-details-box {
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  box-shadow: var(--shadow-input);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  font-size: 0.85rem;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.info-label {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.db-message-text {
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 
@@ -247,10 +486,26 @@ function handleSaveSettings() {
   cursor: pointer;
 }
 
-.checkbox-label input[type="checkbox"] {
+.highlight-checkbox {
+  background: rgba(37, 211, 102, 0.1);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(37, 211, 102, 0.3);
+}
+
+.opacity-50 {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.card-disabled {
+  border-color: var(--border-color);
+}
+
+.checkbox-label input[type='checkbox'] {
   width: 18px;
   height: 18px;
-  accent-color: var(--accent-primary);
+  accent-color: var(--accent-whatsapp);
   cursor: pointer;
 }
 
@@ -259,5 +514,108 @@ function handleSaveSettings() {
   justify-content: flex-end;
   padding-top: 16px;
   border-top: 1px solid var(--border-color);
+}
+
+.mt-3 {
+  margin-top: 12px;
+}
+.mt-4 {
+  margin-top: 16px;
+}
+.flex {
+  display: flex;
+}
+.items-center {
+  align-items: center;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.gap-1 {
+  gap: 4px;
+}
+.gap-3 {
+  gap: 12px;
+}
+.font-semibold {
+  font-weight: 600;
+}
+.text-success {
+  color: var(--accent-success);
+}
+.text-warning {
+  color: var(--accent-gold);
+}
+.text-muted {
+  color: var(--text-muted);
+}
+
+.span-full {
+  grid-column: 1 / -1;
+}
+
+.banner-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.card-group-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.preview-mini {
+  width: 100%;
+  height: 100px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.preview-mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.textarea-field {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.text-accent {
+  color: var(--accent-primary);
+}
+
+@media (max-width: 768px) {
+  .store-settings-container {
+    padding: 14px;
+  }
+  .card-header-flex {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .settings-grid,
+  .banner-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .settings-action-bar .btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 46px;
+  }
 }
 </style>

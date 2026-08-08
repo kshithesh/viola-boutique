@@ -1,47 +1,87 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
-import { useSettingsStore } from './settingsStore.js'
-import { useCatalogStore } from './catalogStore.js'
+import type { Product, CartItem, OrderRecord } from '../types'
+export type { OrderRecord }
+import { useSettingsStore } from './settingsStore'
+import { useCatalogStore } from './catalogStore'
+import { safeLocalStorage } from '../utils/safeStorage'
+import {
+  isTursoConfigured,
+  initDatabase,
+  fetchOrdersFromDB,
+  saveOrderToDB,
+  updateOrderStatusInDB
+} from '../services/tursoService'
+
+export interface CustomerFormData {
+  customerName: string
+  customerPhone: string
+  deliveryAddress: string
+  paymentMethod: string
+  notes: string
+}
 
 export const useCartStore = defineStore('cart', () => {
   const LOCAL_STORAGE_CART = 'viora_cart_items_v1'
   const LOCAL_STORAGE_ORDERS = 'viora_orders_history_v1'
 
-  const cartItems = ref(loadCart())
-  const isCartOpen = ref(false)
-  const orders = ref(loadOrders())
+  const cartItems = ref<CartItem[]>(loadCart())
+  const isCartOpen = ref<boolean>(false)
+  const orders = ref<OrderRecord[]>(loadOrders())
 
-  const customerForm = ref({
+  const customerForm = ref<CustomerFormData>({
     customerName: '',
     customerPhone: '',
     deliveryAddress: '',
-    paymentMethod: 'Cash on Delivery', // 'Cash on Delivery', 'UPI / Online Transfer', 'Card on Delivery'
+    paymentMethod: '',
     notes: ''
   })
 
-  function loadCart() {
+  const isDbConnected = ref<boolean>(false)
+
+  function loadCart(): CartItem[] {
     try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_CART)
+      const saved = safeLocalStorage.getItem(LOCAL_STORAGE_CART)
       return saved ? JSON.parse(saved) : []
-    } catch (e) {
+    } catch {
       return []
     }
   }
 
-  function loadOrders() {
+  function loadOrders(): OrderRecord[] {
     try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_ORDERS)
+      const saved = safeLocalStorage.getItem(LOCAL_STORAGE_ORDERS)
       return saved ? JSON.parse(saved) : []
-    } catch (e) {
+    } catch {
       return []
     }
   }
+
+  async function initOrders(): Promise<void> {
+    if (!isTursoConfigured()) {
+      isDbConnected.value = false
+      return
+    }
+    try {
+      await initDatabase()
+      const dbOrders = await fetchOrdersFromDB()
+      if (dbOrders !== null) {
+        orders.value = dbOrders
+        isDbConnected.value = true
+      }
+    } catch (err) {
+      console.warn('[Turso] Could not fetch orders from DB, using local storage mode.', err)
+      isDbConnected.value = false
+    }
+  }
+
+  initOrders()
 
   watch(
     cartItems,
     (newCart) => {
       try {
-        localStorage.setItem(LOCAL_STORAGE_CART, JSON.stringify(newCart))
+        safeLocalStorage.setItem(LOCAL_STORAGE_CART, JSON.stringify(newCart))
       } catch (e) {
         console.error('Failed to save cart to localStorage', e)
       }
@@ -53,7 +93,7 @@ export const useCartStore = defineStore('cart', () => {
     orders,
     (newOrders) => {
       try {
-        localStorage.setItem(LOCAL_STORAGE_ORDERS, JSON.stringify(newOrders))
+        safeLocalStorage.setItem(LOCAL_STORAGE_ORDERS, JSON.stringify(newOrders))
       } catch (e) {
         console.error('Failed to save orders to localStorage', e)
       }
@@ -61,33 +101,35 @@ export const useCartStore = defineStore('cart', () => {
     { deep: true }
   )
 
-  const cartTotalItems = computed(() => {
+  const cartTotalItems = computed<number>(() => {
     return cartItems.value.reduce((sum, item) => sum + item.quantity, 0)
   })
 
-  const cartSubtotal = computed(() => {
-    return cartItems.value.reduce((sum, item) => sum + (item.product.price * item.quantity), 0)
+  const cartSubtotal = computed<number>(() => {
+    return cartItems.value.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
   })
 
-  const shippingFee = computed(() => {
+  const shippingFee = computed<number>(() => {
     const settingsStore = useSettingsStore()
-    if (cartSubtotal.value >= settingsStore.settings.freeShippingThreshold || cartItems.value.length === 0) {
+    if (
+      cartSubtotal.value >= settingsStore.settings.freeShippingThreshold ||
+      cartItems.value.length === 0
+    ) {
       return 0
     }
     return settingsStore.settings.deliveryFee
   })
 
-  const taxAmount = computed(() => {
+  const taxAmount = computed<number>(() => {
     const settingsStore = useSettingsStore()
     return cartSubtotal.value * settingsStore.settings.taxRate
   })
 
-  const grandTotal = computed(() => {
+  const grandTotal = computed<number>(() => {
     return cartSubtotal.value + shippingFee.value + taxAmount.value
   })
 
-  // Actions
-  function toggleCart(openState) {
+  function toggleCart(openState?: boolean): void {
     if (openState !== undefined) {
       isCartOpen.value = openState
     } else {
@@ -95,15 +137,15 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
-  function addToCart(product, quantity = 1, selectedColor = null) {
-    const color = selectedColor || (product.colors && product.colors.length > 0 ? product.colors[0] : 'Default')
+  function addToCart(product: Product, quantity = 1, selectedColor: string | null = null): void {
+    const color =
+      selectedColor || (product.colors && product.colors.length > 0 ? product.colors[0] : 'Default')
     const existingIndex = cartItems.value.findIndex(
-      item => item.product.id === product.id && item.selectedColor === color
+      (item) => item.product.id === product.id && item.selectedColor === color
     )
 
     if (existingIndex !== -1) {
       const newQty = cartItems.value[existingIndex].quantity + quantity
-      // Ensure quantity doesn't exceed stock
       cartItems.value[existingIndex].quantity = Math.min(newQty, product.stock)
     } else {
       cartItems.value.push({
@@ -115,7 +157,7 @@ export const useCartStore = defineStore('cart', () => {
     isCartOpen.value = true
   }
 
-  function updateQuantity(index, newQty) {
+  function updateQuantity(index: number, newQty: number): void {
     if (index >= 0 && index < cartItems.value.length) {
       if (newQty <= 0) {
         removeFromCart(index)
@@ -126,17 +168,17 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
-  function removeFromCart(index) {
+  function removeFromCart(index: number): void {
     if (index >= 0 && index < cartItems.value.length) {
       cartItems.value.splice(index, 1)
     }
   }
 
-  function clearCart() {
+  function clearCart(): void {
     cartItems.value = []
   }
 
-  function checkoutViaWhatsApp() {
+  function checkoutViaWhatsApp(): string | null {
     const settingsStore = useSettingsStore()
     const catalogStore = useCatalogStore()
 
@@ -145,6 +187,7 @@ export const useCartStore = defineStore('cart', () => {
     const orderId = 'VIO-' + Math.floor(1000 + Math.random() * 9000)
     const currency = settingsStore.settings.currency
     const storeName = settingsStore.settings.storeName
+    const isWhatsAppActive = settingsStore.settings.enableWhatsApp !== false
 
     let message = `🛍️ *NEW ORDER FROM ${storeName.toUpperCase()}*\n`
     message += `🆔 *Order Ref:* #${orderId}\n`
@@ -178,12 +221,10 @@ export const useCartStore = defineStore('cart', () => {
     message += `----------------------------------\n`
     message += `Please confirm my order. Thank you!`
 
-    // Build WhatsApp URL
     const targetPhone = settingsStore.settings.whatsappNumber.replace(/\D/g, '')
     const whatsappUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`
 
-    // Log Order into history
-    const newOrderRecord = {
+    const newOrderRecord: OrderRecord = {
       orderId,
       timestamp: new Date().toISOString(),
       customerName: customerForm.value.customerName || 'Valued Customer',
@@ -192,32 +233,37 @@ export const useCartStore = defineStore('cart', () => {
       paymentMethod: customerForm.value.paymentMethod,
       items: [...cartItems.value],
       totalAmount: grandTotal.value,
-      status: 'Pending Contact' // 'Pending Contact', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'
+      status: isWhatsAppActive ? 'Pending Contact' : 'Confirmed'
     }
 
     orders.value.unshift(newOrderRecord)
-
-    // Decrement stock levels in catalog store
+    if (isTursoConfigured()) {
+      saveOrderToDB(newOrderRecord).catch((err) =>
+        console.error('Failed to sync new order to Turso DB', err)
+      )
+    }
     catalogStore.decrementStockBatch(cartItems.value)
-
-    // Clear cart and close drawer
     clearCart()
     isCartOpen.value = false
 
-    return whatsappUrl
+    return isWhatsAppActive ? whatsappUrl : null
   }
 
-  function processRazorpayPayment({ onSuccess, onError }) {
+  function processRazorpayPayment(callbacks: {
+    onSuccess?: (data: any) => void
+    onError?: (err: string) => void
+  }): void {
     const settingsStore = useSettingsStore()
     const catalogStore = useCatalogStore()
 
     if (cartItems.value.length === 0) {
-      if (onError) onError('Your cart is empty.')
+      if (callbacks.onError) callbacks.onError('Your cart is empty.')
       return
     }
 
-    if (typeof window.Razorpay !== 'function') {
-      if (onError) onError('Razorpay SDK unavailable. Please check your network connection.')
+    if (typeof (window as any).Razorpay !== 'function') {
+      if (callbacks.onError)
+        callbacks.onError('Razorpay SDK unavailable. Please check your network connection.')
       return
     }
 
@@ -237,13 +283,13 @@ export const useCartStore = defineStore('cart', () => {
       theme: {
         color: '#b45309'
       },
-      handler: function (response) {
-        const paymentId = response.razorpay_payment_id || ('pay_' + Math.random().toString(36).substring(2, 10))
+      handler: function (response: any) {
+        const paymentId =
+          response.razorpay_payment_id || 'pay_' + Math.random().toString(36).substring(2, 10)
         const currency = settingsStore.settings.currency
         const storeName = settingsStore.settings.storeName
 
-        // Log Order into history
-        const newOrderRecord = {
+        const newOrderRecord: OrderRecord = {
           orderId,
           timestamp: new Date().toISOString(),
           customerName: customerForm.value.customerName || 'Valued Customer',
@@ -257,8 +303,12 @@ export const useCartStore = defineStore('cart', () => {
         }
 
         orders.value.unshift(newOrderRecord)
+        if (isTursoConfigured()) {
+          saveOrderToDB(newOrderRecord).catch((err) =>
+            console.error('Failed to sync new Razorpay order to Turso DB', err)
+          )
+        }
 
-        // Construct WhatsApp confirmation payload with Razorpay Payment ID
         let message = `✅ *PAID ONLINE VIA RAZORPAY — ${storeName.toUpperCase()}*\n`
         message += `🆔 *Order Ref:* #${orderId}\n`
         message += `💳 *Razorpay Payment ID:* ${paymentId}\n`
@@ -293,31 +343,38 @@ export const useCartStore = defineStore('cart', () => {
         clearCart()
         isCartOpen.value = false
 
-        if (onSuccess) onSuccess({ orderId, paymentId, newOrderRecord, whatsappUrl })
+        if (callbacks.onSuccess)
+          callbacks.onSuccess({ orderId, paymentId, newOrderRecord, whatsappUrl })
       },
       modal: {
         ondismiss: function () {
-          if (onError) onError('Payment modal closed.')
+          if (callbacks.onError) callbacks.onError('Payment modal closed.')
         }
       }
     }
 
     try {
-      const rzp = new window.Razorpay(options)
-      rzp.on('payment.failed', function (resp) {
-        if (onError) onError(resp.error?.description || 'Payment failed.')
+      const rzp = new (window as any).Razorpay(options)
+      rzp.on('payment.failed', function (resp: any) {
+        if (callbacks.onError) callbacks.onError(resp.error?.description || 'Payment failed.')
       })
       rzp.open()
     } catch (e) {
       console.error('Failed to launch Razorpay checkout modal', e)
-      if (onError) onError('Unable to open Razorpay payment window. Please check your Key ID.')
+      if (callbacks.onError)
+        callbacks.onError('Unable to open Razorpay payment window. Please check your Key ID.')
     }
   }
 
-  function updateOrderStatus(orderId, newStatus) {
-    const ord = orders.value.find(o => o.orderId === orderId)
+  function updateOrderStatus(orderId: string, newStatus: string): void {
+    const ord = orders.value.find((o) => o.orderId === orderId)
     if (ord) {
       ord.status = newStatus
+      if (isTursoConfigured()) {
+        updateOrderStatusInDB(orderId, newStatus).catch((err) =>
+          console.error('Failed to sync order status update to Turso DB', err)
+        )
+      }
     }
   }
 
@@ -326,6 +383,7 @@ export const useCartStore = defineStore('cart', () => {
     isCartOpen,
     customerForm,
     orders,
+    isDbConnected,
     cartTotalItems,
     cartSubtotal,
     shippingFee,
@@ -338,6 +396,7 @@ export const useCartStore = defineStore('cart', () => {
     clearCart,
     checkoutViaWhatsApp,
     processRazorpayPayment,
-    updateOrderStatus
+    updateOrderStatus,
+    initOrders
   }
 })

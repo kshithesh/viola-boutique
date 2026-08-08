@@ -1,21 +1,22 @@
-<script setup>
-import { ShoppingBag, Eye, Star, AlertCircle, Check } from 'lucide-vue-next'
-import { useSettingsStore } from '../../stores/settingsStore.js'
-import { useCartStore } from '../../stores/cartStore.js'
+<script setup lang="ts">
+import { ShoppingBag, Eye, Star, AlertCircle, Check } from '@lucide/vue'
+import type { Product } from '../../types'
+import { useSettingsStore } from '../../stores/settingsStore'
+import { useCartStore } from '../../stores/cartStore'
 
-const props = defineProps({
-  product: {
-    type: Object,
-    required: true
-  }
-})
+const props = defineProps<{
+  product: Product
+}>()
 
-const emit = defineEmits(['openQuickView', 'notify'])
+const emit = defineEmits<{
+  (e: 'openQuickView', product: Product): void
+  (e: 'notify', message: string, type?: 'success' | 'error' | 'info'): void
+}>()
 
 const settingsStore = useSettingsStore()
 const cartStore = useCartStore()
 
-function handleAddToCart() {
+function handleAddToCart(): void {
   if (props.product.stock <= 0) return
   cartStore.addToCart(props.product, 1)
   emit('notify', `Added "${props.product.name}" to cart!`, 'success')
@@ -41,9 +42,7 @@ function handleAddToCart() {
         <span v-else-if="product.stock <= 5 && product.stock > 0" class="badge badge-low-stock">
           Only {{ product.stock }} Left
         </span>
-        <span v-else-if="product.stock <= 0" class="badge badge-out-of-stock">
-          Out of Stock
-        </span>
+        <span v-else-if="product.stock <= 0" class="badge badge-out-of-stock"> Out of Stock </span>
       </div>
     </div>
 
@@ -51,14 +50,14 @@ function handleAddToCart() {
     <div class="card-body">
       <div class="meta-header">
         <span class="category-tag">{{ product.category }}</span>
-        <div class="rating-box" v-if="product.rating">
+        <div v-if="product.rating" class="rating-box">
           <Star :size="13" class="star-icon" />
           <span>{{ product.rating }}</span>
           <span class="reviews-count">({{ product.reviewsCount }})</span>
         </div>
       </div>
 
-      <h3 class="product-title" @click="emit('openQuickView', product)" :title="product.name">
+      <h3 class="product-title" :title="product.name" @click="emit('openQuickView', product)">
         {{ product.name }}
       </h3>
 
@@ -82,14 +81,12 @@ function handleAddToCart() {
           <span v-else-if="product.stock > 0" class="stock-text stock-low">
             <AlertCircle :size="12" /> Only {{ product.stock }} left
           </span>
-          <span v-else class="stock-text stock-out">
-            Sold Out
-          </span>
+          <span v-else class="stock-text stock-out"> Sold Out </span>
         </div>
       </div>
 
       <!-- Action Button -->
-      <button 
+      <button
         class="btn add-to-cart-btn"
         :class="product.stock > 0 ? 'btn-primary' : 'btn-secondary disabled'"
         :disabled="product.stock <= 0"
@@ -108,7 +105,9 @@ function handleAddToCart() {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s;
+  transition:
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.25s;
 }
 
 .product-card:hover {
@@ -301,6 +300,28 @@ function handleAddToCart() {
   .card-body {
     padding: 10px;
   }
+  .badge-stack {
+    top: 8px;
+    left: 8px;
+    gap: 4px;
+  }
+  .badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+  .category-tag {
+    font-size: 0.68rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100px;
+  }
+  .rating-box {
+    font-size: 0.72rem;
+  }
+  .reviews-count {
+    display: none;
+  }
   .product-title {
     font-size: 0.88rem;
     line-height: 1.2;
@@ -323,8 +344,9 @@ function handleAddToCart() {
     gap: 4px;
   }
   .add-to-cart-btn {
-    padding: 8px 10px;
+    padding: 10px;
     font-size: 0.82rem;
+    min-height: 40px;
   }
 }
 </style>

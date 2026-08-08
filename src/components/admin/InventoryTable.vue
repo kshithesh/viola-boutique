@@ -1,21 +1,24 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Search, Plus, Minus, Edit2, Trash2, AlertCircle, CheckCircle, PackageX } from 'lucide-vue-next'
-import { useCatalogStore } from '../../stores/catalogStore.js'
-import { useSettingsStore } from '../../stores/settingsStore.js'
+import { Search, Plus, Minus, Edit2, Trash2, AlertCircle, CheckCircle, PackageX } from '@lucide/vue'
+import type { Product } from '../../types'
+import { useCatalogStore } from '../../stores/catalogStore'
+import { useSettingsStore } from '../../stores/settingsStore'
 
-const emit = defineEmits(['editProduct', 'notify'])
+const emit = defineEmits<{
+  (e: 'editProduct', product: Product): void
+  (e: 'notify', message: string, type?: 'success' | 'error' | 'info'): void
+}>()
 
 const catalogStore = useCatalogStore()
 const settingsStore = useSettingsStore()
 
-const adminSearch = ref('')
-const adminCategoryFilter = ref('All Categories')
-const adminStockFilter = ref('all') // 'all', 'low-stock', 'out-of-stock'
+const adminSearch = ref<string>('')
+const adminCategoryFilter = ref<string>('All Categories')
+const adminStockFilter = ref<'all' | 'low-stock' | 'out-of-stock'>('all')
 
-const tableProducts = computed(() => {
-  return catalogStore.products.filter(product => {
-    // Search filter
+const tableProducts = computed<Product[]>(() => {
+  return catalogStore.products.filter((product) => {
     if (adminSearch.value.trim()) {
       const q = adminSearch.value.toLowerCase()
       const matchName = product.name.toLowerCase().includes(q)
@@ -23,32 +26,35 @@ const tableProducts = computed(() => {
       if (!matchName && !matchSku) return false
     }
 
-    // Category filter
-    if (adminCategoryFilter.value !== 'All Categories' && product.category !== adminCategoryFilter.value) {
+    if (
+      adminCategoryFilter.value !== 'All Categories' &&
+      product.category !== adminCategoryFilter.value
+    ) {
       return false
     }
 
-    // Stock status filter
-    if (adminStockFilter.value === 'low-stock' && (product.stock > 5 || product.stock <= 0)) return false
+    if (adminStockFilter.value === 'low-stock' && (product.stock > 5 || product.stock <= 0))
+      return false
     if (adminStockFilter.value === 'out-of-stock' && product.stock > 0) return false
 
     return true
   })
 })
 
-function handleStockChange(product, delta) {
+function handleStockChange(product: Product, delta: number): void {
   const newStock = Math.max(0, product.stock + delta)
   catalogStore.updateStock(product.id, newStock)
   emit('notify', `Stock for "${product.name}" updated to ${newStock}`, 'info')
 }
 
-function handleDirectStockInput(product, event) {
-  const val = parseInt(event.target.value) || 0
+function handleDirectStockInput(product: Product, event: Event): void {
+  const target = event.target as HTMLInputElement
+  const val = parseInt(target.value) || 0
   catalogStore.updateStock(product.id, val)
   emit('notify', `Stock for "${product.name}" set to ${val}`, 'info')
 }
 
-function handleDeleteProduct(product) {
+function handleDeleteProduct(product: Product): void {
   if (confirm(`Are you sure you want to delete "${product.name}" from inventory?`)) {
     catalogStore.deleteProduct(product.id)
     emit('notify', `Product "${product.name}" deleted.`, 'error')
@@ -63,9 +69,9 @@ function handleDeleteProduct(product) {
       <!-- Search Input -->
       <div class="table-search-box">
         <Search :size="16" class="search-icon" />
-        <input 
-          type="text" 
-          v-model="adminSearch" 
+        <input
+          v-model="adminSearch"
+          type="text"
           placeholder="Filter SKU or product name..."
           class="table-search-input"
         />
@@ -135,12 +141,12 @@ function handleDeleteProduct(product) {
                 <button class="stock-btn" @click="handleStockChange(product, -1)">
                   <Minus :size="12" />
                 </button>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   :value="product.stock"
-                  @change="handleDirectStockInput(product, $event)"
                   min="0"
                   class="stock-number-input"
+                  @change="handleDirectStockInput(product, $event)"
                 />
                 <button class="stock-btn" @click="handleStockChange(product, 1)">
                   <Plus :size="12" />
@@ -163,18 +169,18 @@ function handleDeleteProduct(product) {
 
             <!-- Action Buttons -->
             <td class="text-right action-cell">
-              <button 
-                class="btn btn-secondary btn-sm action-icon-btn" 
-                @click="emit('editProduct', product)"
+              <button
+                class="btn btn-secondary btn-sm action-icon-btn"
                 title="Edit Product"
+                @click="emit('editProduct', product)"
               >
                 <Edit2 :size="14" />
               </button>
 
-              <button 
-                class="btn btn-danger btn-sm action-icon-btn" 
-                @click="handleDeleteProduct(product)"
+              <button
+                class="btn btn-danger btn-sm action-icon-btn"
                 title="Delete Product"
+                @click="handleDeleteProduct(product)"
               >
                 <Trash2 :size="14" />
               </button>
@@ -249,6 +255,7 @@ function handleDeleteProduct(product) {
 
 .table-wrapper {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .inventory-table {
@@ -333,15 +340,16 @@ function handleDeleteProduct(product) {
 .stock-adjuster {
   display: inline-flex;
   align-items: center;
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
   border-radius: var(--radius-md);
-  padding: 2px;
+  padding: 2px 4px;
+  box-shadow: var(--shadow-input);
 }
 
 .stock-btn {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border: none;
   background: transparent;
   color: var(--text-primary);
@@ -350,10 +358,12 @@ function handleDeleteProduct(product) {
   justify-content: center;
   cursor: pointer;
   border-radius: var(--radius-sm);
+  transition: background-color 0.15s;
 }
 
 .stock-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(180, 83, 9, 0.15);
+  color: var(--accent-primary);
 }
 
 .stock-number-input {
@@ -364,7 +374,7 @@ function handleDeleteProduct(product) {
   color: var(--text-primary);
   font-family: var(--font-heading);
   font-weight: 800;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   outline: none;
   -moz-appearance: textfield;
 }

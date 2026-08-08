@@ -1,4 +1,6 @@
-export const INITIAL_PRODUCTS = [
+import type { Product } from '../types'
+
+export const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'prod-301',
     sku: 'VHYD-BDL-01',
@@ -12,8 +14,10 @@ export const INITIAL_PRODUCTS = [
     reviewsCount: 58,
     isFeatured: true,
     badge: 'Bridal Masterpiece',
-    description: 'Heritage crimson red velvet lehenga fully hand-crafted with antique Zardozi, Marodi work, and real gota patti. Includes matching blouse and double net dupattas (shoulder & head veil).',
-    image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop',
+    description:
+      'Heritage crimson red velvet lehenga fully hand-crafted with antique Zardozi, Marodi work, and real gota patti. Includes matching blouse and double net dupattas (shoulder & head veil).',
+    image:
+      'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop',
     colors: ['Heritage Crimson Red & Gold', 'Deep Royal Maroon', 'Emerald Gold Velvet'],
     tags: ['Bridal', 'Lehenga', 'Zardozi', 'Wedding', 'Dulhan']
   },
@@ -30,8 +34,10 @@ export const INITIAL_PRODUCTS = [
     reviewsCount: 44,
     isFeatured: true,
     badge: 'Handloom Classic',
-    description: 'Handcrafted in Varanasi on pure Katan silk. Woven with intricate Kadwa antique gold zari jaal across the body, featuring a heavy brocade pallu.',
-    image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop',
+    description:
+      'Handcrafted in Varanasi on pure Katan silk. Woven with intricate Kadwa antique gold zari jaal across the body, featuring a heavy brocade pallu.',
+    image:
+      'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop',
     colors: ['Royal Purple & Gold', 'Sindoori Red & Antique Zari', 'Emerald Green & Gold'],
     tags: ['Saree', 'Banarasi', 'Katan Silk', 'Wedding Saree']
   },
@@ -48,8 +54,10 @@ export const INITIAL_PRODUCTS = [
     reviewsCount: 32,
     isFeatured: true,
     badge: 'Cocktail Special',
-    description: 'Floor-length flared designer gown in champagne georgette. Embellished with hand-cut mirror work, resham embroidery, and draped cape sleeve detailing.',
-    image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800&auto=format&fit=crop',
+    description:
+      'Floor-length flared designer gown in champagne georgette. Embellished with hand-cut mirror work, resham embroidery, and draped cape sleeve detailing.',
+    image:
+      'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800&auto=format&fit=crop',
     colors: ['Champagne Gold', 'Dusty Rose Pink', 'Sage Mint'],
     tags: ['Gown', 'Indo-Western', 'Reception', 'Cocktail']
   },
@@ -66,8 +74,10 @@ export const INITIAL_PRODUCTS = [
     reviewsCount: 29,
     isFeatured: false,
     badge: 'Haldi & Mehendi',
-    description: 'Vibrant yellow and peach sharara suit set featuring short flared kurti with gold Gota patti work, layered multi-tier sharara pants, and crinkled dupatta.',
-    image: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop',
+    description:
+      'Vibrant yellow and peach sharara suit set featuring short flared kurti with gold Gota patti work, layered multi-tier sharara pants, and crinkled dupatta.',
+    image:
+      'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop',
     colors: ['Sunflower Yellow', 'Mehendi Green', 'Peach Coral'],
     tags: ['Sharara', 'Haldi', 'Mehendi', 'Sangeet']
   },
@@ -84,8 +94,10 @@ export const INITIAL_PRODUCTS = [
     reviewsCount: 51,
     isFeatured: true,
     badge: 'Sangeet Favorite',
-    description: 'Lightweight Italian organza silk lehenga featuring 3D floral threadwork embroidery, sequins highlights, and scalloped border dupatta. Perfect for Sangeet & Engagement ceremonies.',
-    image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop',
+    description:
+      'Lightweight Italian organza silk lehenga featuring 3D floral threadwork embroidery, sequins highlights, and scalloped border dupatta. Perfect for Sangeet & Engagement ceremonies.',
+    image:
+      'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop',
     colors: ['Blush Pink', 'Lilac Lavender', 'Mint Pistachio'],
     tags: ['Lehenga', 'Organza', 'Sangeet', 'Pastel']
   },
@@ -102,8 +114,10 @@ export const INITIAL_PRODUCTS = [
     reviewsCount: 36,
     isFeatured: false,
     badge: 'Royalty',
-    description: 'Floor-length 24-kali Anarkali suit handcrafted in pure Georgette. Features delicate Chikankari shadow embroidery and silver Mukaish badla work.',
-    image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800&auto=format&fit=crop',
+    description:
+      'Floor-length 24-kali Anarkali suit handcrafted in pure Georgette. Features delicate Chikankari shadow embroidery and silver Mukaish badla work.',
+    image:
+      'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800&auto=format&fit=crop',
     colors: ['Royal Ivory', 'Pastel Blue', 'Soft Lavender'],
     tags: ['Anarkali', 'Chikankari', 'Festive', 'Suit']
   },
@@ -120,8 +134,10 @@ export const INITIAL_PRODUCTS = [
     reviewsCount: 62,
     isFeatured: false,
     badge: 'South Silk',
-    description: 'Woven in Kanchipuram with pure mulberry silk yarns and golden tissue threads. Features contrast korvai grand zari border and rich pallu.',
-    image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop',
+    description:
+      'Woven in Kanchipuram with pure mulberry silk yarns and golden tissue threads. Features contrast korvai grand zari border and rich pallu.',
+    image:
+      'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop',
     colors: ['Golden Mustard & Magenta', 'Teal Blue & Copper Zari', 'Crimson & Antique Gold'],
     tags: ['Kanjeevaram', 'Silk Saree', 'South Indian Wedding']
   },
@@ -138,14 +154,16 @@ export const INITIAL_PRODUCTS = [
     reviewsCount: 48,
     isFeatured: false,
     badge: 'Nizam Heritage',
-    description: 'Handcrafted 22k gold-plated bridal choker set studded with uncut Kundan stones, green emerald drops, and multi-strand Hyderabad pearls.',
-    image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop',
+    description:
+      'Handcrafted 22k gold-plated bridal choker set studded with uncut Kundan stones, green emerald drops, and multi-strand Hyderabad pearls.',
+    image:
+      'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop',
     colors: ['Emerald & Hyderabadi Pearl', 'Ruby & Pearl', 'Classic Champagne'],
     tags: ['Jewelry', 'Bridal Set', 'Kundan', 'Pearls']
   }
 ]
 
-export const CATEGORIES = [
+export const CATEGORIES: string[] = [
   'All Products',
   'Bridal & Wedding Lehengas',
   'Designer Sarees',

@@ -1,16 +1,21 @@
-<script setup>
-import { PackageSearch, RefreshCw } from 'lucide-vue-next'
+<script setup lang="ts">
+import { PackageSearch, RefreshCw } from '@lucide/vue'
 import ProductCard from './ProductCard.vue'
-import { useCatalogStore } from '../../stores/catalogStore.js'
+import type { Product } from '../../types'
+import { useCatalogStore } from '../../stores/catalogStore'
 
-const emit = defineEmits(['openQuickView', 'notify'])
+const emit = defineEmits<{
+  (e: 'openQuickView', product: Product): void
+  (e: 'notify', message: string, type?: 'success' | 'error' | 'info'): void
+}>()
+
 const catalogStore = useCatalogStore()
 
-function resetFilters() {
+function resetFilters(): void {
   catalogStore.searchQuery = ''
   catalogStore.selectedCategory = 'All Products'
   catalogStore.selectedStockFilter = 'all'
-  catalogStore.maxPrice = 500
+  catalogStore.maxPrice = 80000
 }
 </script>
 
@@ -19,10 +24,13 @@ function resetFilters() {
     <!-- Grid Header Info -->
     <div class="grid-header">
       <h2 class="section-title">
-        Catalog Products 
+        Catalog Products
         <span class="count-pill">{{ catalogStore.filteredProducts.length }} Items</span>
       </h2>
-      <p class="section-subtitle" v-if="catalogStore.selectedCategory !== 'All Products' || catalogStore.searchQuery">
+      <p
+        v-if="catalogStore.selectedCategory !== 'All Products' || catalogStore.searchQuery"
+        class="section-subtitle"
+      >
         Showing results for <strong>"{{ catalogStore.selectedCategory }}"</strong>
         <span v-if="catalogStore.searchQuery"> matching "{{ catalogStore.searchQuery }}"</span>
       </p>
@@ -30,11 +38,11 @@ function resetFilters() {
 
     <!-- Product Grid -->
     <div v-if="catalogStore.filteredProducts.length > 0" class="products-grid">
-      <ProductCard 
-        v-for="product in catalogStore.filteredProducts" 
-        :key="product.id" 
+      <ProductCard
+        v-for="product in catalogStore.filteredProducts"
+        :key="product.id"
         :product="product"
-        @openQuickView="emit('openQuickView', $event)"
+        @open-quick-view="emit('openQuickView', $event)"
         @notify="(msg, type) => emit('notify', msg, type)"
       />
     </div>

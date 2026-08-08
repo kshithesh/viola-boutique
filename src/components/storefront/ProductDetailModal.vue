@@ -1,40 +1,63 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue'
-import { X, ShoppingBag, MessageSquare, Star, Plus, Minus, Check, ShieldCheck, Scissors } from 'lucide-vue-next'
-import { useSettingsStore } from '../../stores/settingsStore.js'
-import { useCartStore } from '../../stores/cartStore.js'
+import {
+  X,
+  ShoppingBag,
+  MessageSquare,
+  Star,
+  Plus,
+  Minus,
+  Check,
+  ShieldCheck,
+  Scissors
+} from '@lucide/vue'
+import type { Product } from '../../types'
+import { useSettingsStore } from '../../stores/settingsStore'
+import { useCartStore } from '../../stores/cartStore'
 
-const props = defineProps({
-  product: {
-    type: Object,
-    default: null
-  }
-})
+const props = defineProps<{
+  product?: Product | null
+}>()
 
-const emit = defineEmits(['close', 'notify'])
+const emit = defineEmits<{
+  (e: 'close'): void
+  (e: 'notify', message: string, type?: 'success' | 'error' | 'info'): void
+}>()
 
 const settingsStore = useSettingsStore()
 const cartStore = useCartStore()
 
-const selectedQuantity = ref(1)
-const selectedColor = ref(props.product?.colors?.[0] || 'Default')
-const stitchingOption = ref('Custom Fitting via WhatsApp') // 'Unstitched', 'Standard Size (M)', 'Custom Fitting via WhatsApp'
+const selectedQuantity = ref<number>(1)
+const selectedColor = ref<string>(props.product?.colors?.[0] || 'Default')
+const stitchingOption = ref<string>('Custom Fitting via WhatsApp')
 
-const subtotal = computed(() => {
+const subtotal = computed<number>(() => {
   if (!props.product) return 0
   return props.product.price * selectedQuantity.value
 })
 
-function handleAddToCart() {
+function handleAddToCart(): void {
   if (!props.product || props.product.stock <= 0) return
-  cartStore.addToCart(props.product, selectedQuantity.value, `${selectedColor.value} | ${stitchingOption.value}`)
-  emit('notify', `Added ${selectedQuantity.value}x "${props.product.name}" (${stitchingOption.value}) to cart!`, 'success')
+  cartStore.addToCart(
+    props.product,
+    selectedQuantity.value,
+    `${selectedColor.value} | ${stitchingOption.value}`
+  )
+  emit(
+    'notify',
+    `Added ${selectedQuantity.value}x "${props.product.name}" (${stitchingOption.value}) to cart!`,
+    'success'
+  )
   emit('close')
 }
 
-function handleDirectWhatsAppBuy() {
+function handleDirectWhatsAppBuy(): void {
   if (!props.product || props.product.stock <= 0) return
-  cartStore.addToCart(props.product, selectedQuantity.value, `${selectedColor.value} | ${stitchingOption.value}`)
+  cartStore.addToCart(
+    props.product,
+    selectedQuantity.value,
+    `${selectedColor.value} | ${stitchingOption.value}`
+  )
   cartStore.toggleCart(true)
   emit('close')
 }
@@ -64,10 +87,12 @@ function handleDirectWhatsAppBuy() {
           <h2 class="modal-title">{{ product.name }}</h2>
 
           <div class="modal-meta-row">
-            <div class="rating-box" v-if="product.rating">
+            <div v-if="product.rating" class="rating-box">
               <Star :size="15" class="star-icon" />
               <span>{{ product.rating }}</span>
-              <span class="reviews-count">({{ product.reviewsCount }} verified boutique reviews)</span>
+              <span class="reviews-count"
+                >({{ product.reviewsCount }} verified boutique reviews)</span
+              >
             </div>
             <span class="sku-tag">SKU: {{ product.sku }}</span>
           </div>
@@ -85,9 +110,7 @@ function handleDirectWhatsAppBuy() {
             <span v-else-if="product.stock > 0" class="stock-badge-large stock-low">
               ⚠️ Only {{ product.stock }} left!
             </span>
-            <span v-else class="stock-badge-large stock-out">
-              Sold Out
-            </span>
+            <span v-else class="stock-badge-large stock-out"> Sold Out </span>
           </div>
 
           <p class="modal-description">
@@ -98,8 +121,8 @@ function handleDirectWhatsAppBuy() {
           <div v-if="product.colors && product.colors.length > 0" class="variant-section">
             <span class="variant-label">Color / Work Style:</span>
             <div class="color-options">
-              <button 
-                v-for="color in product.colors" 
+              <button
+                v-for="color in product.colors"
                 :key="color"
                 class="color-btn"
                 :class="{ active: selectedColor === color }"
@@ -111,21 +134,44 @@ function handleDirectWhatsAppBuy() {
           </div>
 
           <!-- Boutique Stitching & Fitting Options -->
-          <div class="stitching-section" v-if="product.category.includes('Lehenga') || product.category.includes('Suit') || product.category.includes('Saree') || product.category.includes('Sharara')">
-            <span class="variant-label"><Scissors :size="14" /> Boutique Tailoring & Stitching:</span>
+          <div
+            v-if="
+              product.category.includes('Lehenga') ||
+              product.category.includes('Suit') ||
+              product.category.includes('Saree') ||
+              product.category.includes('Sharara')
+            "
+            class="stitching-section"
+          >
+            <span class="variant-label"
+              ><Scissors :size="14" /> Boutique Tailoring & Stitching:</span
+            >
             <div class="stitching-options">
-              <label class="stitching-radio" :class="{ active: stitchingOption === 'Custom Fitting via WhatsApp' }">
-                <input type="radio" v-model="stitchingOption" value="Custom Fitting via WhatsApp" />
+              <label
+                class="stitching-radio"
+                :class="{ active: stitchingOption === 'Custom Fitting via WhatsApp' }"
+              >
+                <input v-model="stitchingOption" type="radio" value="Custom Fitting via WhatsApp" />
                 <span>Custom Fitting via WhatsApp Measurements</span>
               </label>
 
-              <label class="stitching-radio" :class="{ active: stitchingOption === 'Standard Sizing (S / M / L / XL)' }">
-                <input type="radio" v-model="stitchingOption" value="Standard Sizing (S / M / L / XL)" />
+              <label
+                class="stitching-radio"
+                :class="{ active: stitchingOption === 'Standard Sizing (S / M / L / XL)' }"
+              >
+                <input
+                  v-model="stitchingOption"
+                  type="radio"
+                  value="Standard Sizing (S / M / L / XL)"
+                />
                 <span>Standard Ready Size</span>
               </label>
 
-              <label class="stitching-radio" :class="{ active: stitchingOption === 'Unstitched Fabric Only' }">
-                <input type="radio" v-model="stitchingOption" value="Unstitched Fabric Only" />
+              <label
+                class="stitching-radio"
+                :class="{ active: stitchingOption === 'Unstitched Fabric Only' }"
+              >
+                <input v-model="stitchingOption" type="radio" value="Unstitched Fabric Only" />
                 <span>Unstitched Fabric</span>
               </label>
             </div>
@@ -135,16 +181,16 @@ function handleDirectWhatsAppBuy() {
           <div v-if="product.stock > 0" class="quantity-section">
             <span class="variant-label">Quantity:</span>
             <div class="quantity-controls">
-              <button 
-                class="qty-btn" 
+              <button
+                class="qty-btn"
                 :disabled="selectedQuantity <= 1"
                 @click="selectedQuantity = Math.max(1, selectedQuantity - 1)"
               >
                 <Minus :size="14" />
               </button>
               <span class="qty-number">{{ selectedQuantity }}</span>
-              <button 
-                class="qty-btn" 
+              <button
+                class="qty-btn"
                 :disabled="selectedQuantity >= product.stock"
                 @click="selectedQuantity = Math.min(product.stock, selectedQuantity + 1)"
               >
@@ -156,7 +202,7 @@ function handleDirectWhatsAppBuy() {
 
           <!-- Action Buttons -->
           <div class="modal-actions">
-            <button 
+            <button
               class="btn btn-primary btn-lg flex-1"
               :disabled="product.stock <= 0"
               @click="handleAddToCart"
@@ -164,7 +210,8 @@ function handleDirectWhatsAppBuy() {
               <ShoppingBag :size="18" /> Add to Cart
             </button>
 
-            <button 
+            <button
+              v-if="settingsStore.settings.enableWhatsApp !== false"
               class="btn btn-whatsapp btn-lg flex-1"
               :disabled="product.stock <= 0"
               @click="handleDirectWhatsAppBuy"
@@ -175,7 +222,10 @@ function handleDirectWhatsAppBuy() {
 
           <div class="guarantee-box">
             <ShieldCheck :size="16" class="guarantee-icon" />
-            <span>Guaranteed handcrafted authentic couture from Jubilee Hills, Hyderabad. Direct stylist consultation included.</span>
+            <span
+              >Guaranteed handcrafted authentic couture from Jubilee Hills, Hyderabad. Direct
+              stylist consultation included.</span
+            >
           </div>
         </div>
       </div>
@@ -192,6 +242,7 @@ function handleDirectWhatsAppBuy() {
   overflow-y: auto;
   padding: 32px;
   border-radius: var(--radius-lg);
+  -webkit-overflow-scrolling: touch;
 }
 
 .close-modal-btn {
@@ -342,7 +393,9 @@ function handleDirectWhatsAppBuy() {
   margin-bottom: 18px;
 }
 
-.variant-section, .stitching-section, .quantity-section {
+.variant-section,
+.stitching-section,
+.quantity-section {
   margin-bottom: 18px;
 }
 
@@ -476,12 +529,18 @@ function handleDirectWhatsAppBuy() {
     max-height: 94vh;
     border-radius: var(--radius-md);
   }
+  .close-modal-btn {
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+  }
   .modal-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 18px;
   }
   .large-img-wrapper {
-    height: 260px;
+    height: 250px;
   }
   .modal-title {
     font-size: 1.35rem;
@@ -489,8 +548,35 @@ function handleDirectWhatsAppBuy() {
   .modal-price {
     font-size: 1.4rem;
   }
+  .color-btn {
+    padding: 8px 14px;
+  }
+  .stitching-radio {
+    padding: 10px 12px;
+  }
   .modal-actions {
     flex-direction: column;
+    gap: 10px;
+  }
+  .modal-actions .btn {
+    width: 100%;
+    min-height: 46px;
+  }
+}
+
+@media (max-width: 480px) {
+  .large-img-wrapper {
+    height: 210px;
+  }
+  .modal-price-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .quantity-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }
 </style>

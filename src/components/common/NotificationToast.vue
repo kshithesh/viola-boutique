@@ -1,10 +1,20 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
-import { CheckCircle2, AlertCircle, Info, X } from 'lucide-vue-next'
+import { CheckCircle2, AlertCircle, Info, X } from '@lucide/vue'
 
-const toasts = ref([])
+export interface ToastItem {
+  id: number
+  message: string
+  type: 'success' | 'error' | 'info'
+}
 
-function addToast(message, type = 'success', duration = 3500) {
+const toasts = ref<ToastItem[]>([])
+
+function addToast(
+  message: string,
+  type: 'success' | 'error' | 'info' = 'success',
+  duration = 3500
+): void {
   const id = Date.now()
   toasts.value.push({ id, message, type })
   setTimeout(() => {
@@ -12,8 +22,8 @@ function addToast(message, type = 'success', duration = 3500) {
   }, duration)
 }
 
-function removeToast(id) {
-  toasts.value = toasts.value.filter(t => t.id !== id)
+function removeToast(id: number): void {
+  toasts.value = toasts.value.filter((t) => t.id !== id)
 }
 
 defineExpose({
@@ -23,13 +33,16 @@ defineExpose({
 
 <template>
   <div class="toast-container">
-    <div 
-      v-for="toast in toasts" 
+    <div
+      v-for="toast in toasts"
       :key="toast.id"
       class="toast-item glass-panel animate-fade-in"
       :class="`toast-${toast.type}`"
     >
-      <component :is="toast.type === 'error' ? AlertCircle : (toast.type === 'info' ? Info : CheckCircle2)" :size="18" />
+      <component
+        :is="toast.type === 'error' ? AlertCircle : toast.type === 'info' ? Info : CheckCircle2"
+        :size="18"
+      />
       <span class="toast-message">{{ toast.message }}</span>
       <button class="toast-close" @click="removeToast(toast.id)">
         <X :size="14" />
@@ -90,5 +103,21 @@ defineExpose({
   cursor: pointer;
   display: flex;
   align-items: center;
+}
+
+@media (max-width: 480px) {
+  .toast-container {
+    left: 12px;
+    right: 12px;
+    bottom: 16px;
+    width: auto;
+  }
+  .toast-item {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 0.84rem;
+  }
 }
 </style>

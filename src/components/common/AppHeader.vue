@@ -1,43 +1,41 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
-import { 
-  ShoppingBag, 
-  Search, 
-  LayoutDashboard, 
-  Store, 
-  Sun, 
-  Moon, 
-  Sparkles,
-  MessageSquare,
-  Crown
-} from 'lucide-vue-next'
-import { useCatalogStore } from '../../stores/catalogStore.js'
-import { useCartStore } from '../../stores/cartStore.js'
-import { useSettingsStore } from '../../stores/settingsStore.js'
+import { ShoppingBag, Search, Store, Sun, Moon, Crown, User } from '@lucide/vue'
+import { useCatalogStore } from '../../stores/catalogStore'
+import { useCartStore } from '../../stores/cartStore'
+import { useSettingsStore } from '../../stores/settingsStore'
+import { useAuthStore } from '../../stores/authStore'
 
-const props = defineProps({
-  currentView: {
-    type: String,
-    default: 'store' // 'store' | 'admin'
+withDefaults(
+  defineProps<{
+    currentView?: 'store' | 'admin'
+  }>(),
+  {
+    currentView: 'store'
   }
-})
+)
 
-const emit = defineEmits(['navigate'])
+const emit = defineEmits<{
+  (e: 'navigate', view: 'store' | 'admin'): void
+}>()
 
 const catalogStore = useCatalogStore()
 const cartStore = useCartStore()
 const settingsStore = useSettingsStore()
+const authStore = useAuthStore()
 
-const isDarkMode = ref(false)
+const isDarkMode = ref<boolean>(false)
 
-function toggleTheme() {
+function toggleTheme(): void {
   isDarkMode.value = !isDarkMode.value
   document.documentElement.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light')
 }
 
-function openStylistWhatsApp() {
+function openStylistWhatsApp(): void {
   const phone = settingsStore.settings.whatsappNumber.replace(/\D/g, '')
-  const text = encodeURIComponent(`Namaste! I would like to book a VIP Personal Styling Consultation & Bridal Fitting at ${settingsStore.settings.storeName}.`)
+  const text = encodeURIComponent(
+    `Namaste! I would like to book a VIP Personal Styling Consultation & Bridal Fitting at ${settingsStore.settings.storeName}.`
+  )
   window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
 }
 </script>
@@ -57,18 +55,18 @@ function openStylistWhatsApp() {
       </div>
 
       <!-- Center Search Bar (Visible in Store View) -->
-      <div class="header-search" v-if="currentView === 'store'">
+      <div v-if="currentView === 'store'" class="header-search">
         <Search class="search-icon" :size="18" />
-        <input 
-          type="text" 
-          v-model="catalogStore.searchQuery" 
-          placeholder="Search lehengas, sarees, jewelry..." 
+        <input
+          v-model="catalogStore.searchQuery"
+          type="text"
+          placeholder="Search lehengas, sarees, jewelry..."
           class="search-input"
         />
-        <button 
-          v-if="catalogStore.searchQuery" 
-          @click="catalogStore.searchQuery = ''"
+        <button
+          v-if="catalogStore.searchQuery"
           class="clear-search-btn"
+          @click="catalogStore.searchQuery = ''"
         >
           ✕
         </button>
@@ -77,34 +75,38 @@ function openStylistWhatsApp() {
       <!-- Right Actions: Stylist status, Return to Store (if on admin), Theme Toggle, Cart -->
       <div class="header-actions">
         <!-- Return to Storefront (Only when on Admin Page) -->
-        <button 
+        <button
           v-if="currentView === 'admin'"
           class="btn btn-secondary btn-sm"
-          @click="emit('navigate', 'store')"
           title="Return to Customer Storefront"
+          @click="emit('navigate', 'store')"
         >
           <Store :size="16" />
           <span class="action-text">Return to Shop</span>
         </button>
 
         <!-- Live Stylist Status Pill (Store View) -->
-        <button 
-          v-if="currentView === 'store'"
+        <button
+          v-if="currentView === 'store' && settingsStore.settings.enableWhatsApp !== false"
           class="btn btn-secondary btn-sm stylist-status-btn"
-          @click="openStylistWhatsApp"
           title="Chat with Personal Stylist on WhatsApp"
+          @click="openStylistWhatsApp"
         >
           <span class="online-dot"></span>
           <span class="stylist-text">Stylist Online</span>
         </button>
 
         <!-- Theme Toggle -->
-        <button class="btn btn-secondary btn-icon" @click="toggleTheme" title="Toggle Light/Dark Theme">
+        <button
+          class="btn btn-secondary btn-icon"
+          title="Toggle Light/Dark Theme"
+          @click="toggleTheme"
+        >
           <component :is="isDarkMode ? Sun : Moon" :size="18" />
         </button>
 
         <!-- Cart Button (Store View) -->
-        <button 
+        <button
           v-if="currentView === 'store'"
           class="btn btn-primary cart-trigger-btn"
           @click="cartStore.toggleCart(true)"
@@ -114,6 +116,25 @@ function openStylistWhatsApp() {
           <span v-if="cartStore.cartTotalItems > 0" class="cart-badge animate-bounce">
             {{ cartStore.cartTotalItems }}
           </span>
+        </button>
+
+        <!-- User / Sign-in Button (Store View) -->
+        <button
+          v-if="currentView === 'store'"
+          class="btn btn-secondary user-auth-btn"
+          :class="{ 'user-auth-btn--authed': authStore.isAuthenticated }"
+          :title="authStore.isAuthenticated ? authStore.customerName : 'Sign in'"
+          @click="authStore.openAuthModal()"
+        >
+          <img
+            v-if="authStore.isAuthenticated && authStore.customerAvatar"
+            :src="authStore.customerAvatar"
+            class="header-avatar"
+            :alt="authStore.customerName"
+          />
+          <User v-else :size="18" />
+          <span v-if="!authStore.isAuthenticated" class="action-text">Sign In</span>
+          <span v-else class="action-text">{{ authStore.customerName.split(' ')[0] }}</span>
         </button>
       </div>
     </div>
@@ -285,36 +306,83 @@ function openStylistWhatsApp() {
   border-radius: var(--radius-full);
 }
 
+.user-auth-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-auth-btn--authed {
+  border-color: rgba(5, 150, 105, 0.3);
+  background: rgba(5, 150, 105, 0.08);
+  color: var(--accent-success);
+}
+
+.header-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 @media (max-width: 768px) {
   .app-header {
-    margin: 8px 8px 16px 8px;
-    padding: 10px 14px;
+    margin: 8px 8px 14px 8px;
+    padding: 10px 12px;
   }
   .header-container {
-    flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
+  }
+  .brand-logo {
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
   }
   .brand-name {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .brand-subtitle {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .logo-icon {
     width: 36px;
     height: 36px;
+    flex-shrink: 0;
   }
   .crown-icon {
     width: 18px;
     height: 18px;
   }
   .header-search {
-    order: 3;
-    max-width: 100%;
-    width: 100%;
-    margin-top: 4px;
+    display: none;
   }
-  .stylist-text, .action-text, .cart-label {
+  .header-actions {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .stylist-status-btn,
+  .cart-trigger-btn {
+    padding: 8px 10px;
+    min-height: 38px;
+  }
+  .stylist-text,
+  .action-text,
+  .cart-label {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand-name {
+    font-size: 1.05rem;
+  }
+  .brand-subtitle {
     display: none;
   }
 }

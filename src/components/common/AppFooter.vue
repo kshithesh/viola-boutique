@@ -1,12 +1,14 @@
-<script setup>
-import { MessageSquare, ShieldCheck, Zap, RefreshCw } from 'lucide-vue-next'
-import { useSettingsStore } from '../../stores/settingsStore.js'
+<script setup lang="ts">
+import { MessageSquare, ShieldCheck, Zap, RefreshCw } from '@lucide/vue'
+import { useSettingsStore } from '../../stores/settingsStore'
 
 const settingsStore = useSettingsStore()
 
-function openDirectWhatsApp() {
+function openDirectWhatsApp(): void {
   const phone = settingsStore.settings.whatsappNumber.replace(/\D/g, '')
-  const text = encodeURIComponent(`Hi ${settingsStore.settings.storeName}! I have an inquiry about your products.`)
+  const text = encodeURIComponent(
+    `Hi ${settingsStore.settings.storeName}! I have an inquiry about your products.`
+  )
   window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
 }
 </script>
@@ -16,10 +18,25 @@ function openDirectWhatsApp() {
     <!-- Value Props Banner -->
     <div class="features-bar">
       <div class="feature-item">
-        <div class="feature-icon"><MessageSquare :size="20" /></div>
+        <div class="feature-icon">
+          <MessageSquare v-if="settingsStore.settings.enableWhatsApp !== false" :size="20" />
+          <Zap v-else :size="20" />
+        </div>
         <div class="feature-text">
-          <h4>WhatsApp Ordering</h4>
-          <p>Send order directly to WhatsApp in 1 click</p>
+          <h4>
+            {{
+              settingsStore.settings.enableWhatsApp !== false
+                ? 'WhatsApp Ordering'
+                : 'Instant Checkout'
+            }}
+          </h4>
+          <p>
+            {{
+              settingsStore.settings.enableWhatsApp !== false
+                ? 'Send order directly to WhatsApp in 1 click'
+                : 'Fast and secure online order processing'
+            }}
+          </p>
         </div>
       </div>
       <div class="feature-item">
@@ -40,7 +57,7 @@ function openDirectWhatsApp() {
         <div class="feature-icon"><RefreshCw :size="20" /></div>
         <div class="feature-text">
           <h4>Easy Returns</h4>
-          <p>Hassle-free support via chat</p>
+          <p>Hassle-free support & assistance</p>
         </div>
       </div>
     </div>
@@ -50,7 +67,11 @@ function openDirectWhatsApp() {
       <div class="footer-brand">
         <h3 class="footer-logo">{{ settingsStore.settings.storeName }}</h3>
         <p class="footer-tagline">{{ settingsStore.settings.tagline }}</p>
-        <button class="btn btn-whatsapp btn-sm mt-3" @click="openDirectWhatsApp">
+        <button
+          v-if="settingsStore.settings.enableWhatsApp !== false"
+          class="btn btn-whatsapp btn-sm mt-3"
+          @click="openDirectWhatsApp"
+        >
           <MessageSquare :size="16" /> Chat on WhatsApp
         </button>
       </div>
@@ -71,7 +92,10 @@ function openDirectWhatsApp() {
     </div>
 
     <div class="footer-bottom">
-      <p>&copy; {{ new Date().getFullYear() }} {{ settingsStore.settings.storeName }}. Designed for Seamless Vercel Deployment.</p>
+      <p>
+        &copy; {{ new Date().getFullYear() }} {{ settingsStore.settings.storeName }}. Designed for
+        Seamless Vercel Deployment.
+      </p>
     </div>
   </footer>
 </template>
@@ -182,5 +206,31 @@ function openDirectWhatsApp() {
   border-top: 1px solid var(--border-color);
   font-size: 0.78rem;
   color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+  .app-footer {
+    margin: 30px 8px 16px 8px;
+    padding: 20px 16px;
+  }
+  .features-bar {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    padding-bottom: 18px;
+    margin-bottom: 18px;
+  }
+  .footer-body {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .footer-links {
+    gap: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .features-bar {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
